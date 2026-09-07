@@ -126,3 +126,6 @@ data/injectors-world-master.xlsx
 # to anyone cloning the repo.
 .graphifyignore
 graphify-out/
+
+# playwright mcp scratch output
+.playwright-mcp/

@@ -185,13 +185,38 @@ export async function getAllRoutePaths(): Promise<string[][]> {
   const [svcRes, brandRes, locRes, activeCitiesRes] = await Promise.all([
     payload.find({ collection: 'services', limit: 500, depth: 0 }),
     payload.find({ collection: 'brands', limit: 500, depth: 0 }),
-    payload.find({ collection: 'locations', limit: 5000, depth: 0 }),
+    /**
+     * Raw SQL and unbounded, for the same reason `ensureCaches` above is: this
+     * was `payload.find({ collection: 'locations', limit: 5000 })`, and there
+     * are 6,098 location rows. Payload orders newest-first, so 1,098 rows fell
+     * off the end -- including 50 of the 51 STATE rows, the oldest rows in the
+     * table. Every state page silently dropped out of generateStaticParams and
+     * fell back to on-demand ISR.
+     *
+     * That was survivable while a state hub was a thin page. It is not now that
+     * state hubs render a full city grid, and it is exactly the cliff the
+     * comment at the top of this file describes. A larger number would only move
+     * the cliff, so there is no limit. Five columns over ~6k rows is a few
+     * hundred KB, and payload.find would also have joined every relationship
+     * field on the collection regardless of depth.
+     */
     pool.query(
-      `SELECT DISTINCT city, state
+      `SELECT id, slug, kind, name, state FROM locations WHERE slug IS NOT NULL`,
+    ),
+    /**
+     * Grouped, not DISTINCT, because this count is now what ranks the
+     * pre-render list. It used to rank on `locations.provider_count`, which is
+     * 0 or null on 6,086 of the 6,098 rows (the providers table was dropped),
+     * so "top 200 cities" was really an arbitrary 200. Published clinic count
+     * is the number that actually says which city pages matter.
+     */
+    pool.query(
+      `SELECT city, state, count(*)::int AS n
          FROM clinics
         WHERE status = 'published'
           AND city IS NOT NULL AND city <> ''
-          AND state IS NOT NULL AND state <> ''`,
+          AND state IS NOT NULL AND state <> ''
+        GROUP BY city, state`,
     ),
   ])
 
@@ -199,10 +224,10 @@ export async function getAllRoutePaths(): Promise<string[][]> {
   const brandSlugs: string[] = brandRes.docs.map((b: any) => b.slug)
   const stateSlugs: string[] = []
   const stateCodeToSlug = new Map<string, string>()
-  const cityEntries: Array<{ citySlug: string; stateSlug: string; providerCount: number }> = []
+  const cityEntries: Array<{ citySlug: string; stateSlug: string; clinicCount: number }> = []
   const cityKeyToSlug = new Map<string, string>()
 
-  for (const loc of locRes.docs as any[]) {
+  for (const loc of locRes.rows as any[]) {
     if (loc.kind === 'state') {
       stateSlugs.push(loc.slug)
       if (loc.state) stateCodeToSlug.set((loc.state as string).toLowerCase(), loc.slug)
@@ -212,21 +237,29 @@ export async function getAllRoutePaths(): Promise<string[][]> {
     }
   }
 
-  for (const loc of locRes.docs as any[]) {
-    if (loc.kind === 'metro' || loc.kind === 'city') {
-      const stateSlug = stateCodeToSlug.get((loc.state ?? '').toLowerCase()) ?? ''
-      cityEntries.push({ citySlug: loc.slug, stateSlug, providerCount: loc.providerCount ?? 0 })
-    }
-  }
-
-  const activeCitySlugs = new Set<string>()
+  // Published clinics per city slug. Doubles as the "is this city active at all"
+  // set, so a city with no clinics is never a pre-render candidate.
+  const clinicCountBySlug = new Map<string, number>()
   for (const clinic of activeCitiesRes.rows as any[]) {
     const key = `${(clinic.city ?? '').toLowerCase().replace(/\s+city$/i, '').trim()},${(clinic.state ?? '').toLowerCase()}`
     const citySlug = cityKeyToSlug.get(key)
     if (citySlug) {
-      activeCitySlugs.add(citySlug)
+      clinicCountBySlug.set(citySlug, (clinicCountBySlug.get(citySlug) ?? 0) + Number(clinic.n ?? 0))
     }
   }
+
+  for (const loc of locRes.rows as any[]) {
+    if (loc.kind === 'metro' || loc.kind === 'city') {
+      const stateSlug = stateCodeToSlug.get((loc.state ?? '').toLowerCase()) ?? ''
+      cityEntries.push({
+        citySlug: loc.slug,
+        stateSlug,
+        clinicCount: clinicCountBySlug.get(loc.slug) ?? 0,
+      })
+    }
+  }
+
+  const activeCitySlugs = new Set<string>(clinicCountBySlug.keys())
 
   const paths: string[][] = []
   const activeCityEntries = cityEntries.filter((e) => activeCitySlugs.has(e.citySlug) && e.stateSlug)
@@ -237,7 +270,10 @@ export async function getAllRoutePaths(): Promise<string[][]> {
     0,
     parseInt(process.env.PRERENDER_CITY_LIMIT || '200', 10) || 200,
   )
-  const rankedCities = [...activeCityEntries].sort((a, b) => b.providerCount - a.providerCount)
+  // Ties broken by slug so the pre-render list is stable across builds.
+  const rankedCities = [...activeCityEntries].sort(
+    (a, b) => b.clinicCount - a.clinicCount || a.citySlug.localeCompare(b.citySlug),
+  )
   const topFindCities = rankedCities.slice(0, TOP_FIND_CITIES)
 
   // Money pages (service/brand × state/city) are NOT pre-rendered: rendering the

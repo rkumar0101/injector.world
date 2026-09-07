@@ -1,7 +1,7 @@
 import type { Metadata } from 'next'
 import type { ComponentType, ReactNode } from 'react'
 import Link from 'next/link'
-import { notFound } from 'next/navigation'
+import { notFound, permanentRedirect } from 'next/navigation'
 import { Header } from '@/components/header/Header'
 import { Footer } from '@/components/footer/Footer'
 import { ClinicPathBreadcrumb } from '@/components/clinics/ClinicPathBreadcrumb'
@@ -91,9 +91,25 @@ export default async function ClinicDetailPage({
 }: {
   params: Promise<{ state: string; city: string; slug: string }>
 }) {
-  const { slug } = await params
+  const { state, city, slug } = await params
   const clinic = await getClinicBySlug(slug)
   if (!clinic) notFound()
+
+  /**
+   * The lookup is by slug alone, so before this check every state/city pair in
+   * the country served the same clinic with a 200: an Austin clinic answered
+   * happily at /clinics/ohio/cleveland-oh/<slug>. The canonical tag pointed at
+   * the right url, so nothing was mis-indexed, but it left 51 states x 5,455
+   * cities of valid-looking urls per clinic for a crawler to find if a single
+   * bad link ever appeared.
+   *
+   * A 308 to the real url rather than a 404: these are the clinic's own pages
+   * under a wrong prefix, so sending the visitor (or the crawler) to the right
+   * one is more useful than a dead end, and it consolidates rather than drops.
+   */
+  if (state !== clinic.stateSlug || city !== clinic.citySlug) {
+    permanentRedirect(`/clinics/${clinic.stateSlug}/${clinic.citySlug}/${clinic.slug}`)
+  }
 
   const canonicalUrl = `${SITE_URL}/clinics/${clinic.stateSlug}/${clinic.citySlug}/${clinic.slug}`
   const faqs = clinic.faqs.length > 0 ? clinic.faqs : buildFallbackFaqs(clinic)
