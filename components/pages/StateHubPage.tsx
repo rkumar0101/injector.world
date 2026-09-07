@@ -213,7 +213,11 @@ export function StateHubPage({ data, schema }: Props) {
                         disabled={isLoading}
                         className="inline-flex items-center gap-2 px-6 py-3 rounded-control border border-border text-body-sm font-medium text-ink-primary hover:border-brand-accent hover:bg-surface transition disabled:opacity-50"
                       >
-                        {isLoading ? 'Loading...' : `Load more clinics (${totalClinics - allClinics.length} remaining)`}
+                        {/* serverTotal, not the totalClinics prop: the prop is
+                            the unfiltered count fixed at page load, so applying
+                            a brand or service filter left this claiming more
+                            remaining clinics than the filter can return. */}
+                        {isLoading ? 'Loading...' : `Load more clinics (${Math.max(0, serverTotal - allClinics.length)} remaining)`}
                       </button>
                     </div>
                   )}
@@ -225,6 +229,34 @@ export function StateHubPage({ data, schema }: Props) {
               )}
             </div>
           </div>
+
+          {/* Browse by city: full grid.
+              StateCityCombobox above is a search box whose options are
+              <button>s, so until 2026-09-07 this page had no crawlable link to
+              any of its city pages. This grid is that link set, matching the
+              pattern already used on BrandStatePage and ServiceStatePage. */}
+          {allCities.length > 0 && (
+            <div>
+              <h2 className="font-serif text-h2 text-ink-primary mb-6">Cities in {state.name}</h2>
+              <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-3">
+                {allCities.map((c) => (
+                  <Link
+                    key={c.slug}
+                    href={`/${state.slug}/${c.slug}`}
+                    className="group flex items-center justify-between p-4 rounded-control border border-border bg-surface hover:border-brand-accent hover:bg-surface-warm transition-all"
+                  >
+                    <div>
+                      <div className="font-medium text-body-sm text-ink-primary group-hover:text-brand-accent transition">{c.name}</div>
+                      {c.clinicCount > 0 && <div className="text-caption text-ink-tertiary">{c.clinicCount.toLocaleString()}+ clinics</div>}
+                    </div>
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="text-ink-tertiary group-hover:text-brand-accent flex-shrink-0">
+                      <polyline points="9 18 15 12 9 6" />
+                    </svg>
+                  </Link>
+                ))}
+              </div>
+            </div>
+          )}
 
           {/* FAQs */}
           {faqs.length > 0 && (

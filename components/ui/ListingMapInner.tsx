@@ -1,10 +1,12 @@
 'use client'
 
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
+import { usePathname } from 'next/navigation'
 import { APIProvider, InfoWindow, Map, useMap } from '@vis.gl/react-google-maps'
 import { MarkerClusterer } from '@googlemaps/markerclusterer'
 import { useTheme } from 'next-themes'
 import { MapZoomControl } from '@/components/shared/MapZoomControl'
+import { rememberListing } from '@/lib/from-listing'
 import { DARK_MAP_STYLE, LIGHT_MAP_STYLE } from '@/lib/maps/theme'
 import { svgToDataUrl } from '@/lib/maps/svg-icon'
 
@@ -140,6 +142,9 @@ function ListingMapContent({
   const map = useMap()
   const [popup, setPopup] = useState<PopupState | null>(null)
   const fittedRef = useRef(false)
+  // The popup link is the only anchor a map pin produces, so this one call
+  // covers every listing that renders a map. See lib/from-listing.ts.
+  const pathname = usePathname()
 
   const handlePinClick = useCallback(
     (pin: MapPin) => {
@@ -223,6 +228,7 @@ function ListingMapContent({
     <InfoWindow position={{ lat: popup.lat, lng: popup.lng }} headerDisabled onClose={() => setPopup(null)}>
       <a
         href={popup.pin.href}
+        onClick={() => rememberListing(pathname)}
         style={{
           display: 'block',
           minWidth: 180,

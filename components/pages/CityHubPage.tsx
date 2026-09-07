@@ -2,6 +2,8 @@
 
 import { useEffect, useMemo, useRef, useState } from 'react'
 import Link from 'next/link'
+import { usePathname } from 'next/navigation'
+import { rememberListing } from '@/lib/from-listing'
 import { DirectoryClinicCard } from '@/components/shared/DirectoryClinicCard'
 import { ListingFilters } from '@/components/shared/ListingFilters'
 import {
@@ -22,8 +24,9 @@ const CLINIC_PAGE_SIZE = 24
 type Props = { data: CityHubData; schema: object[] }
 
 export function CityHubPage({ data, schema }: Props) {
-  const { city, stateLocation, services: treatments, brands, clinics, neighborhoods, faqs, totalClinics } = data
+  const { city, stateLocation, services: treatments, brands, clinics, neighborhoods, faqs, totalClinics, allClinicLinks } = data
   const cityDisplay = city.name.replace(/\s+city$/i, '')
+  const pathname = usePathname()
   const [neighborhood, setNeighborhood] = useState('')
   const [listingFilters, setListingFilters] = useState<ListingFilterValues>(DEFAULT_LISTING_FILTERS)
   const [allClinics, setAllClinics] = useState(clinics)
@@ -267,6 +270,37 @@ export function CityHubPage({ data, schema }: Props) {
               )}
             </div>
           </div>
+
+          {/*
+            Full clinic link index.
+
+            The card grid above stops at 24 rows behind a JS "Load more", so
+            every clinic past that point was unreachable by a crawler. This list
+            carries the rest. It is rendered unconditionally, never behind an
+            accordion or an open state: markup that is not in the served HTML
+            does nothing for discovery. Plain text links on purpose, no cards
+            and no per-row SVG, which is what keeps 450 rows cheap.
+          */}
+          {stateLocation && allClinicLinks.length > 1 && (
+            <div>
+              <h2 className="font-serif text-h3 text-ink-primary mb-5">
+                All clinics in {cityDisplay}, {city.stateCode}
+              </h2>
+              <ul className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-x-6 gap-y-2">
+                {allClinicLinks.map((c) => (
+                  <li key={c.slug}>
+                    <Link
+                      href={`/clinics/${stateLocation.slug}/${city.slug}/${c.slug}`}
+                      onClick={() => rememberListing(pathname)}
+                      className="text-body-sm text-ink-secondary hover:text-brand-accent transition"
+                    >
+                      {c.name}
+                    </Link>
+                  </li>
+                ))}
+              </ul>
+            </div>
+          )}
 
           {/* State link */}
           {stateLocation && (

@@ -4,6 +4,7 @@ import Link from 'next/link'
 import { notFound } from 'next/navigation'
 import { Header } from '@/components/header/Header'
 import { Footer } from '@/components/footer/Footer'
+import { ClinicPathBreadcrumb } from '@/components/clinics/ClinicPathBreadcrumb'
 import { ClinicSaveButton } from '@/components/clinics/ClinicSaveButton'
 import { ShareButton } from '@/components/clinics/ShareButton'
 import { ACTION_CIRCLE, ACTION_LABEL, ACTION_STACK } from '@/components/clinics/hero-actions'
@@ -131,25 +132,13 @@ export default async function ClinicDetailPage({
       <Header />
       <TrackEvent type="clinic_view" entityType="clinic" entityId={Number(clinic.id)} />
 
-      <div className="bg-surface border-b border-border">
-        <div className="max-canvas py-3">
-          <nav className="flex min-w-0 items-center gap-2 text-caption text-ink-tertiary" aria-label="Breadcrumb">
-            <Link href="/" className="hover:text-ink-primary transition">Home</Link>
-            <span>/</span>
-            <Link href="/clinics" className="hover:text-ink-primary transition">Clinics</Link>
-            <span>/</span>
-            <Link href={`/${clinic.stateSlug}`} className="hover:text-ink-primary transition">
-              {titleFromSlug(clinic.stateSlug)}
-            </Link>
-            <span>/</span>
-            <Link href={`/${clinic.stateSlug}/${clinic.citySlug}`} className="hover:text-ink-primary transition">
-              {clinic.city}
-            </Link>
-            <span>/</span>
-            <span className="truncate text-ink-primary">{clinic.clinicName}</span>
-          </nav>
-        </div>
-      </div>
+      <ClinicPathBreadcrumb
+        stateSlug={clinic.stateSlug}
+        stateName={titleFromSlug(clinic.stateSlug)}
+        citySlug={clinic.citySlug}
+        cityName={clinic.city}
+        clinicName={clinic.clinicName}
+      />
 
       <main className="bg-surface-canvas">
         <section className="border-b border-border bg-surface-canvas py-8 md:py-12">

@@ -24,11 +24,19 @@ type Props = {
  * state pill buttons followed by a city search box, which ate most of a screen.
  * Now it is two dropdowns.
  *
- * The menu items are real <Link>s, not <option>s or buttons. The old version
- * navigated with router.push() from a <button>, so the whole picker was
- * invisible to crawlers; the only crawlable city links on those pages came from
- * the "Popular:" row, which was removed at the same time. Rendering links keeps
- * the pillar -> state -> city crawl path alive.
+ * The menu items are real <Link>s, not <option>s or buttons. A comment here
+ * used to claim that alone kept the pillar -> state -> city crawl path alive.
+ * It did not: the menus were mounted only while open (`{openMenu === 'state' &&
+ * ...}`), so the links were absent from the served HTML and a crawler, which
+ * never clicks, saw no way out of this page. As of 2026-09-07 the state menu is
+ * always in the DOM and hidden with CSS instead, so all 50 state links ship in
+ * the HTML. Closed links carry tabIndex={-1} so the visual behaviour and the tab
+ * order are unchanged.
+ *
+ * The city menu still mounts on demand. Its contents depend on which state the
+ * visitor picked, so there is no static set of city links to render. The city
+ * layer is crawled from the state pages instead, which list their cities as
+ * plain anchors.
  */
 export function LocationPicker({ states, allCities, basePath }: Props) {
   const [openMenu, setOpenMenu] = useState<'state' | 'city' | null>(null)
@@ -65,6 +73,10 @@ export function LocationPicker({ states, allCities, basePath }: Props) {
     'absolute left-0 right-0 top-full z-30 mt-1.5 max-h-72 overflow-y-auto rounded-control border border-border bg-surface-canvas py-1 shadow-lg'
   const itemCls =
     'flex items-center justify-between gap-3 px-4 py-2 text-body-sm text-ink-secondary transition hover:bg-surface hover:text-brand-accent'
+  // Closed menus stay mounted so their links ship in the HTML for crawlers.
+  // Zero-size, transparent and click-through, so nothing is visible or in the
+  // way; the links inside also get tabIndex={-1} so tabbing skips them.
+  const hiddenCls = 'pointer-events-none absolute h-0 w-0 overflow-hidden opacity-0'
 
   return (
     <div ref={containerRef} className="mt-6 grid gap-3 sm:max-w-xl sm:grid-cols-2">
@@ -82,27 +94,30 @@ export function LocationPicker({ states, allCities, basePath }: Props) {
           <Chevron open={openMenu === 'state'} />
         </button>
 
-        {openMenu === 'state' && (
-          <div className={menuCls}>
-            {states.map((state) => (
-              <Link
-                key={state.code}
-                href={`${basePath}/${state.slug}`}
-                onClick={(e) => {
-                  // Picking a state filters the city menu rather than
-                  // navigating. The href stays real so crawlers still follow it.
-                  e.preventDefault()
-                  setSelectedState(state)
-                  setQuery('')
-                  setOpenMenu('city')
-                }}
-                className={itemCls}
-              >
-                {state.name}
-              </Link>
-            ))}
-          </div>
-        )}
+        <div
+          className={openMenu === 'state' ? menuCls : hiddenCls}
+          aria-hidden={openMenu !== 'state'}
+        >
+          {states.map((state) => (
+            <Link
+              key={state.code}
+              href={`${basePath}/${state.slug}`}
+              tabIndex={openMenu === 'state' ? undefined : -1}
+              onClick={(e) => {
+                // Picking a state filters the city menu rather than navigating.
+                // The href is real and always in the HTML, so a crawler follows
+                // it to the state page.
+                e.preventDefault()
+                setSelectedState(state)
+                setQuery('')
+                setOpenMenu('city')
+              }}
+              className={itemCls}
+            >
+              {state.name}
+            </Link>
+          ))}
+        </div>
       </div>
 
       {/* City */}

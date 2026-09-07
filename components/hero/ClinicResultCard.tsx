@@ -1,6 +1,8 @@
 'use client'
 
 import Link from 'next/link'
+import { usePathname } from 'next/navigation'
+import { rememberListing } from '@/lib/from-listing'
 
 /** A clinic derived from the Hero's matched providers (grouped by clinic). */
 export type HeroClinicCard = {
@@ -21,9 +23,13 @@ export type HeroClinicCard = {
 
 export function ClinicResultCard({ clinic }: { clinic: HeroClinicCard }) {
   const location = [clinic.neighborhood, clinic.city, clinic.state].filter(Boolean).join(', ')
+  // Normally `/`, which correctly clears any stored listing. Wired anyway so
+  // the rule stays in exactly one place. See lib/from-listing.ts.
+  const pathname = usePathname()
   return (
     <Link
       href={`/clinics/${clinic.stateSlug}/${clinic.citySlug}/${clinic.slug}`}
+      onClick={() => rememberListing(pathname)}
       className="group flex flex-col gap-2 p-4 rounded-xl border border-border bg-surface-canvas hover:border-brand-accent hover:shadow-md transition"
     >
       <div className="flex items-start justify-between gap-2">

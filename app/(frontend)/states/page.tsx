@@ -81,9 +81,15 @@ export default async function StatesIndexPage() {
 
           {/* The "Live now" and "Coming soon" grids (50-odd tiles) became this
               dropdown on 2026-08-07 (client request). Live states are listed
-              first, with their clinic count; the rest are marked "Soon". The
-              menu items are real links, so the crawl path to every state page
-              is unchanged. */}
+              first, with their clinic count; the rest are marked "Soon".
+
+              A comment here used to say the crawl path to every state page was
+              unchanged because the menu items are real links. That was wrong:
+              the menu was mounted only while open, so the links were absent
+              from the served HTML. StateDropdown now keeps them mounted and
+              hides them with CSS, so the crawl path really is intact. The map
+              above is decorative for this purpose: it navigates from onClick on
+              SVG paths and contains no anchors. */}
           {states.length > 0 && (
             <div>
               <h2 className="font-serif text-h3 text-ink-primary mb-5">Browse by state</h2>

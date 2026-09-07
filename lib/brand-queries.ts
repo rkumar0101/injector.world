@@ -383,7 +383,11 @@ export const getBrandCityDirectory = cache(async function getBrandCityDirectory(
       collection: 'clinics',
       where: {
         and: [
-          { city: { like: cityName } },
+          // `equals`, not `like`. See the note in getCityHub
+          // (lib/location-queries.ts): Payload's `like` is a substring ILIKE,
+          // so a brand city page had the same cross-city bleed (Cleveland
+          // showing Cleveland Heights clinics).
+          { city: { equals: cityName } },
           { state: { equals: stateCode } },
           { status: { equals: 'published' } },
           { brandsOffered: { in: [brand.id] } },

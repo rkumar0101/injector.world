@@ -17,6 +17,13 @@ export type StateOption = {
  * The menu items are real <Link>s rather than <option>s, exactly as in
  * LocationPicker: a native select would have removed every crawlable link to
  * the state pages, and /states is the entry point of the Find path.
+ *
+ * That alone was not enough. Until 2026-09-07 the menu was mounted only while
+ * open, so the links never reached the served HTML and /states led a crawler
+ * nowhere. The menu now stays in the DOM and is hidden with CSS, so every state
+ * link ships in the HTML. Closed links carry tabIndex={-1}, so the visual
+ * behaviour and the tab order are unchanged. The search box still mounts on
+ * open, because its autoFocus would otherwise steal focus on page load.
  */
 export function StateDropdown({ states }: { states: StateOption[] }) {
   const [open, setOpen] = useState(false)
@@ -62,8 +69,15 @@ export function StateDropdown({ states }: { states: StateOption[] }) {
         </svg>
       </button>
 
-      {open && (
-        <div className="absolute left-0 right-0 top-full z-30 mt-1.5 max-h-80 overflow-y-auto rounded-control border border-border bg-surface-canvas py-1 shadow-lg">
+      <div
+        className={
+          open
+            ? 'absolute left-0 right-0 top-full z-30 mt-1.5 max-h-80 overflow-y-auto rounded-control border border-border bg-surface-canvas py-1 shadow-lg'
+            : 'pointer-events-none absolute h-0 w-0 overflow-hidden opacity-0'
+        }
+        aria-hidden={!open}
+      >
+        {open && (
           <div className="px-3 pb-1.5 pt-1">
             <input
               autoFocus
@@ -73,28 +87,29 @@ export function StateDropdown({ states }: { states: StateOption[] }) {
               className="w-full rounded-control border border-border bg-surface-canvas px-3 py-2 text-body-sm text-ink-primary placeholder:text-ink-tertiary focus:border-brand-accent focus:outline-none"
             />
           </div>
+        )}
 
-          {filtered.length === 0 ? (
-            <p className="px-4 py-2 text-body-sm text-ink-tertiary">No states match.</p>
-          ) : (
-            filtered.map((s) => (
-              <Link
-                key={s.slug}
-                href={`/${s.slug}`}
-                onClick={() => setOpen(false)}
-                className="flex items-center justify-between gap-3 px-4 py-2 text-body-sm text-ink-secondary transition hover:bg-surface hover:text-brand-accent"
-              >
-                <span>{s.name}</span>
-                {s.isLive ? (
-                  s.clinicCount > 0 && <span className="text-ink-tertiary">{s.clinicCount.toLocaleString()}</span>
-                ) : (
-                  <span className="text-ink-tertiary">Soon</span>
-                )}
-              </Link>
-            ))
-          )}
-        </div>
-      )}
+        {filtered.length === 0 ? (
+          <p className="px-4 py-2 text-body-sm text-ink-tertiary">No states match.</p>
+        ) : (
+          filtered.map((s) => (
+            <Link
+              key={s.slug}
+              href={`/${s.slug}`}
+              tabIndex={open ? undefined : -1}
+              onClick={() => setOpen(false)}
+              className="flex items-center justify-between gap-3 px-4 py-2 text-body-sm text-ink-secondary transition hover:bg-surface hover:text-brand-accent"
+            >
+              <span>{s.name}</span>
+              {s.isLive ? (
+                s.clinicCount > 0 && <span className="text-ink-tertiary">{s.clinicCount.toLocaleString()}</span>
+              ) : (
+                <span className="text-ink-tertiary">Soon</span>
+              )}
+            </Link>
+          ))
+        )}
+      </div>
     </div>
   )
 }

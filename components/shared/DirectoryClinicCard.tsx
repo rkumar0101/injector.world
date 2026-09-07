@@ -2,8 +2,10 @@
 
 import Image from 'next/image'
 import Link from 'next/link'
+import { usePathname } from 'next/navigation'
 import type { DirectoryClinic } from '@/lib/location-queries'
 import { useSaved } from '@/components/account/SavedItemsProvider'
+import { rememberListing } from '@/lib/from-listing'
 
 export function DirectoryClinicCard({
   c,
@@ -25,6 +27,15 @@ export function DirectoryClinicCard({
   const isSaved = isSavedProp !== undefined ? isSavedProp : isSavedFromHook('clinic', c.id)
   const onSave = onSaveProp ?? (() => toggle('clinic', c.id))
   const stars = Math.round(c.aggregateRating || 0)
+  /**
+   * Remember which listing the visitor left from, so the clinic page can show a
+   * breadcrumb that leads back into the same brand or service path instead of
+   * the generic Find path. Leaving a Find-path listing CLEARS the entry rather
+   * than skipping the write, so a stale brand context cannot follow the visitor.
+   * The rule itself lives in lib/from-listing.ts and is shared with the map
+   * popup and the other clinic entry points.
+   */
+  const pathname = usePathname()
 
   if (compact) {
     return (
@@ -55,6 +66,7 @@ export function DirectoryClinicCard({
           <h3 className="font-semibold text-body-sm text-ink-primary leading-tight line-clamp-1">
             <Link
               href={`/clinics/${c.stateSlug}/${c.citySlug}/${c.slug}`}
+              onClick={() => rememberListing(pathname)}
               className="after:absolute after:inset-0 after:content-['']"
             >
               {c.clinicName}
@@ -132,6 +144,7 @@ export function DirectoryClinicCard({
           <h3 className="font-semibold text-body text-ink-primary leading-tight line-clamp-1">
             <Link
               href={`/clinics/${c.stateSlug}/${c.citySlug}/${c.slug}`}
+              onClick={() => rememberListing(pathname)}
               className="after:absolute after:inset-0 after:content-['']"
             >
               {c.clinicName}

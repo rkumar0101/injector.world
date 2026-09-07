@@ -7,7 +7,10 @@ import { LogoutButton } from '@/components/auth/LogoutButton'
 
 export type ProfileData = {
   user: { name: string; email: string }
-  savedClinics: { id: string; name: string; slug: string; location: string }[]
+  /** `href` is resolved server-side to the full /clinics/[state]/[city]/[slug]
+   *  url, and is null when the clinic cannot be linked. Never build a clinic
+   *  url from `slug` alone here: that is a two-segment path and it 404s. */
+  savedClinics: { id: string; name: string; slug: string; location: string; href: string | null }[]
   bookings: { id: string; service: string; preferredDate: string; status: string; createdAt: string }[]
   questions: { id: string; title: string; status: string; slug: string; answered: boolean }[]
   recommended: { name: string; slug: string } | null
@@ -157,9 +160,15 @@ export function ProfileClient({ data }: { data: ProfileData }) {
                 {clinics.map((c) => (
                   <div key={c.id} className="rounded-2xl border border-border bg-surface p-4 flex items-center gap-3">
                     <div className="min-w-0 flex-1">
-                      <Link href={`/clinics/${c.slug}`} className="block text-body-sm font-semibold text-ink-primary hover:text-brand-accent truncate">
-                        {c.name}
-                      </Link>
+                      {c.href ? (
+                        <Link href={c.href} className="block text-body-sm font-semibold text-ink-primary hover:text-brand-accent truncate">
+                          {c.name}
+                        </Link>
+                      ) : (
+                        <span className="block text-body-sm font-semibold text-ink-primary truncate">
+                          {c.name}
+                        </span>
+                      )}
                       {c.location && <p className="text-caption text-ink-tertiary truncate">{c.location}</p>}
                     </div>
                     <button

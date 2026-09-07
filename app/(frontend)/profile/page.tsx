@@ -3,6 +3,7 @@ import { redirect } from 'next/navigation'
 import { getPayload } from 'payload'
 import config from '@/payload.config'
 import { getAuthUser } from '@/lib/auth-user'
+import { getLocationSlugMap, lookupSlugs } from '@/lib/location-slug-lookup'
 import { Header } from '@/components/header/Header'
 import { Footer } from '@/components/footer/Footer'
 import { ProfileClient } from '@/components/account/ProfileClient'
@@ -39,6 +40,14 @@ export default async function ProfilePage() {
   const savedClinicIds = relIds(u.savedClinics)
 
   // Saved clinics
+  //
+  // The href is built here, not in the client component. A clinic url is
+  // /clinics/[state]/[city]/[slug] and the clinic row only carries the raw
+  // city/state names, so the slugs have to come from the locations map, which
+  // is server-side. ProfileClient used to link to `/clinics/<slug>` on its own:
+  // a two-segment url that matched no route, so every saved clinic 404'd.
+  // Mirrors the pattern already in app/(frontend)/dashboard/page.tsx.
+  const slugMap = savedClinicIds.length > 0 ? await getLocationSlugMap() : null
   const savedClinics =
     savedClinicIds.length > 0
       ? (
@@ -52,11 +61,19 @@ export default async function ProfilePage() {
         ).docs.map((c) => {
           const d = c as unknown as Record<string, unknown>
           const loc = [d.city, d.state].filter(Boolean).join(', ')
+          const slug = (d.slug as string) || ''
+          const slugs = slugMap
+            ? lookupSlugs(String(d.city ?? ''), String(d.state ?? ''), slugMap)
+            : null
           return {
             id: String(d.id),
             name: (d.clinicName as string) || 'Clinic',
-            slug: (d.slug as string) || '',
+            slug,
             location: loc,
+            href:
+              slug && slugs?.stateSlug && slugs?.citySlug
+                ? `/clinics/${slugs.stateSlug}/${slugs.citySlug}/${slug}`
+                : null,
           }
         })
       : []

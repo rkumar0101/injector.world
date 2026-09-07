@@ -328,7 +328,10 @@ export const getCityDirectory = cache(async function getCityDirectory(
       collection: 'clinics',
       where: {
         and: [
-          { city: { like: cityName } },
+          // `equals`, not `like`. See the note in getCityHub: Payload's `like`
+          // is a substring ILIKE, so a service city page had the same
+          // cross-city bleed (Cleveland showing Cleveland Heights clinics).
+          { city: { equals: cityName } },
           { state: { equals: stateCode } },
           { status: { equals: 'published' } },
           { servicesOffered: { in: [service.id] } },
@@ -706,6 +709,17 @@ export type CityHubData = {
   neighborhoods: NeighborhoodInfo[]
   faqs: FaqRow[]
   totalClinics: number
+  /**
+   * Every published clinic in the city, name and slug only, for the plain link
+   * index at the bottom of the page.
+   *
+   * The card grid stops at 24 rows behind a JS "Load more", so 17,585 clinics
+   * (30.5% of the directory) had no crawlable link anywhere on the site. This
+   * list is how a crawler reaches the rest. Every clinic belongs to exactly one
+   * city, so covering this page covers the whole directory with no new urls and
+   * no pagination. See docs/SEO-PATHS-PLAN-2026-09-07.md, Task 3.
+   */
+  allClinicLinks: Array<{ slug: string; name: string }>
 }
 
 export const getCityHub = cache(async function getCityHub(
@@ -735,7 +749,7 @@ export const getCityHub = cache(async function getCityHub(
   const cityName: string = clinicCityName(cityLoc.name)
   const pool = (payload.db as any).pool
 
-  const [slugMap, servicesRes, brandsRes, hoodsRes, clinicsRes, faqs] = await Promise.all([
+  const [slugMap, servicesRes, brandsRes, hoodsRes, clinicsRes, faqs, allClinicLinks] = await Promise.all([
     getLocationSlugMap(),
     payload.find({ collection: 'services', limit: 50, depth: 0, sort: 'name' }),
     payload.find({ collection: 'brands', limit: 50, depth: 0, sort: 'name' }),
@@ -746,13 +760,52 @@ export const getCityHub = cache(async function getCityHub(
     }),
     payload.find({
       collection: 'clinics',
-      where: { and: [{ city: { like: cityName } }, { state: { equals: stateCode } }, { status: { equals: 'published' } }] },
+      /**
+       * `equals`, not `like`. Payload compiles `like` to ILIKE '%value%', a
+       * SUBSTRING match, so /ohio/cleveland-oh was pulling in clinics stored
+       * under "Cleveland Heights" and "East Cleveland": 56 cards on a page whose
+       * own count said 44. Measured 2026-09-07: 244 city pages were showing
+       * clinics that belong to a different city.
+       *
+       * This now matches the totalClinics count query and the allClinicLinks
+       * query below, so all three agree. Verified safe before the change:
+       * every one of the 5,455 city/state pairs matches on exact case too (no
+       * casing drift between locations.name and clinics.city, and every state is
+       * uppercase), and of the 49 pages that lose their substring matches
+       * entirely, zero are `isLive`, so all 49 already render ComingSoonMarket
+       * rather than a clinic grid. No page regresses.
+       */
+      where: { and: [{ city: { equals: cityName } }, { state: { equals: stateCode } }, { status: { equals: 'published' } }] },
       limit: 24,
       page: 1,
       depth: 0,
       sort: '-aggregateRatingCount',
     }),
     getLocationFaqs(payload, cityLoc.id, stateLoc?.id),
+    /**
+     * Raw SQL, two columns, deliberately not payload.find: payload.find joins in
+     * every relationship and array field on clinics regardless of depth, and
+     * this is a hot ISR page that can pull 450+ rows here.
+     *
+     * Predicates mirror the totalClinics count query below exactly, so the list
+     * length and the number shown in the hero can never disagree. LIMIT 1000 is
+     * a safety valve against future data growth, not a design cap: the largest
+     * city today is Houston at 454.
+     */
+    pool.query(
+      `SELECT slug, clinic_name FROM clinics
+        WHERE status = 'published'
+          AND upper(city) = $1 AND upper(state) = $2
+          AND slug IS NOT NULL AND slug <> ''
+        ORDER BY clinic_name
+        LIMIT 1000`,
+      [cityName.toUpperCase(), stateCode.toUpperCase()],
+    ).then(
+      (r: any) => (r.rows as any[]).map((row) => ({ slug: row.slug as string, name: row.clinic_name as string })),
+      // A failure here must not take the page down. An empty link index is a
+      // degraded page, a thrown error is a crashed ISR revalidation.
+      () => [] as Array<{ slug: string; name: string }>,
+    ),
   ])
 
   const clinics: DirectoryClinic[] = (clinicsRes.docs as any[]).map((c: any) => mapClinic(c, slugMap))
@@ -778,6 +831,7 @@ export const getCityHub = cache(async function getCityHub(
     })),
     faqs,
     totalClinics,
+    allClinicLinks,
   }
 })
 
