@@ -787,19 +787,25 @@ export const getCityHub = cache(async function getCityHub(
      * every relationship and array field on clinics regardless of depth, and
      * this is a hot ISR page that can pull 450+ rows here.
      *
-     * Predicates mirror the totalClinics count query below exactly, so the list
-     * length and the number shown in the hero can never disagree. LIMIT 1000 is
-     * a safety valve against future data growth, not a design cap: the largest
-     * city today is Houston at 454.
+     * Predicates mirror the card query above and the totalClinics count below
+     * exactly, so all three agree. Plain `=`, NOT `upper(city) = upper($1)`:
+     * wrapping the column in a function makes clinics_city_idx unusable and
+     * turns this into a sequential scan. Measured on staging: 2,008 ms with
+     * upper(), 26 ms without. Safe because every one of the 5,455 city/state
+     * pairs matches on exact case (verified 2026-09-07) and every state value
+     * is uppercase.
+     *
+     * LIMIT 1000 is a safety valve against future data growth, not a design
+     * cap: the largest city today is Houston at 454.
      */
     pool.query(
       `SELECT slug, clinic_name FROM clinics
         WHERE status = 'published'
-          AND upper(city) = $1 AND upper(state) = $2
+          AND city = $1 AND state = $2
           AND slug IS NOT NULL AND slug <> ''
         ORDER BY clinic_name
         LIMIT 1000`,
-      [cityName.toUpperCase(), stateCode.toUpperCase()],
+      [cityName, stateCode],
     ).then(
       (r: any) => (r.rows as any[]).map((row) => ({ slug: row.slug as string, name: row.clinic_name as string })),
       // A failure here must not take the page down. An empty link index is a
@@ -812,10 +818,13 @@ export const getCityHub = cache(async function getCityHub(
 
   let totalClinics = clinicsRes.totalDocs ?? clinicsRes.docs.length
   try {
+    // Plain `=`, not upper(): wrapping the column killed clinics_city_idx and
+    // made this a sequential scan costing ~2s on every city page. Same
+    // reasoning and the same safety check as the allClinicLinks query above.
     const r = await pool.query(
       `SELECT count(*)::int AS n FROM clinics
-        WHERE status = 'published' AND upper(city) = $1 AND upper(state) = $2`,
-      [cityName.toUpperCase(), stateCode.toUpperCase()],
+        WHERE status = 'published' AND city = $1 AND state = $2`,
+      [cityName, stateCode],
     )
     totalClinics = Number(r.rows[0]?.n ?? totalClinics)
   } catch { /* use totalDocs fallback */ }
