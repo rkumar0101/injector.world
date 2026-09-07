@@ -1,7 +1,7 @@
 import type { Metadata } from 'next'
 import type { ComponentType, ReactNode } from 'react'
 import Link from 'next/link'
-import { notFound, permanentRedirect } from 'next/navigation'
+import { notFound } from 'next/navigation'
 import { Header } from '@/components/header/Header'
 import { Footer } from '@/components/footer/Footer'
 import { ClinicPathBreadcrumb } from '@/components/clinics/ClinicPathBreadcrumb'
@@ -91,25 +91,34 @@ export default async function ClinicDetailPage({
 }: {
   params: Promise<{ state: string; city: string; slug: string }>
 }) {
-  const { state, city, slug } = await params
+  const { slug } = await params
   const clinic = await getClinicBySlug(slug)
   if (!clinic) notFound()
 
   /**
-   * The lookup is by slug alone, so before this check every state/city pair in
-   * the country served the same clinic with a 200: an Austin clinic answered
-   * happily at /clinics/ohio/cleveland-oh/<slug>. The canonical tag pointed at
-   * the right url, so nothing was mis-indexed, but it left 51 states x 5,455
-   * cities of valid-looking urls per clinic for a crawler to find if a single
-   * bad link ever appeared.
+   * KNOWN, DELIBERATELY NOT FIXED HERE (2026-09-07).
    *
-   * A 308 to the real url rather than a 404: these are the clinic's own pages
-   * under a wrong prefix, so sending the visitor (or the crawler) to the right
-   * one is more useful than a dead end, and it consolidates rather than drops.
+   * The lookup is by slug alone, so every state/city pair in the country serves
+   * the same clinic with a 200: an Austin clinic answers at
+   * /clinics/ohio/cleveland-oh/<slug>. The canonical below always points at the
+   * real url, so nothing is mis-indexed, and no link on the site produces a
+   * wrong prefix. It is a latent url-space issue, not an active one.
+   *
+   * A `permanentRedirect` here was tried and reverted the same day. This route
+   * has generateStaticParams + revalidate, so it is prerender-capable, and
+   * redirecting from it made Next emit the Location header TWICE, comma-joined:
+   *   location: /clinics/texas/austin-tx/x,/clinics/texas/austin-tx/x
+   * which is invalid per RFC 9110. It happened on a cache MISS too, so it was
+   * not a stale-cache artifact. The sibling redirects at
+   * /clinics/[state] and /clinics/[state]/[city] are fine precisely because
+   * they have no generateStaticParams and stay dynamic.
+   *
+   * If this is picked up later, the two candidates are notFound() on a
+   * mismatched prefix (clean under ISR, but turns any stale external link with
+   * an old city segment into a dead end), or a redirect from somewhere that is
+   * not prerender-capable. Either needs testing on a deployed environment,
+   * because the duplicate header does not show up locally in tsc.
    */
-  if (state !== clinic.stateSlug || city !== clinic.citySlug) {
-    permanentRedirect(`/clinics/${clinic.stateSlug}/${clinic.citySlug}/${clinic.slug}`)
-  }
 
   const canonicalUrl = `${SITE_URL}/clinics/${clinic.stateSlug}/${clinic.citySlug}/${clinic.slug}`
   const faqs = clinic.faqs.length > 0 ? clinic.faqs : buildFallbackFaqs(clinic)
