@@ -145,12 +145,12 @@ export function ClinicsGrid({
   }
 
   /**
-   * Picking a location navigates to the Find path page for it instead of
-   * filtering this page in JS. Filtering in place left the URL on /clinics, so
-   * the location a visitor picked was not linkable, not shareable and had no
-   * page of its own for a crawler to reach. /texas and /texas/houston-tx are
-   * real pages that already carry the right heading, count, city grid and
-   * clinic list.
+   * Picking a location navigates to that location's page instead of filtering
+   * this page in JS. Filtering in place left the URL on /clinics, so the
+   * location a visitor picked was not linkable, not shareable and had no page
+   * of its own for a crawler to reach. /clinics/texas and
+   * /clinics/texas/houston-tx are real pages that already carry the right
+   * heading, count, city grid and clinic list.
    *
    * Clearing back to "All states" stays on this page: there is no location to
    * navigate to, so it just refetches the unfiltered listing.
@@ -173,7 +173,7 @@ export function ClinicsGrid({
 
     if (stateCode !== selectedState) {
       if (stateSlug) {
-        router.push(`/${stateSlug}`)
+        router.push(`/clinics/${stateSlug}`)
         return
       }
       await handleStateChange(stateCode)
@@ -182,7 +182,7 @@ export function ClinicsGrid({
 
     if (!city) {
       if (stateSlug) {
-        router.push(`/${stateSlug}`)
+        router.push(`/clinics/${stateSlug}`)
         return
       }
       await handleCityChange('')
@@ -190,7 +190,7 @@ export function ClinicsGrid({
     }
 
     if (stateSlug && slugs?.citySlug) {
-      router.push(`/${stateSlug}/${slugs.citySlug}`)
+      router.push(`/clinics/${stateSlug}/${slugs.citySlug}`)
       return
     }
     await handleCityChange(city)

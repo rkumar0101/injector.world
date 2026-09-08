@@ -20,23 +20,30 @@ export const footerLinks = {
     { label: 'Sculptra', href: '/services/sculptra' },
     { label: 'Tear Trough', href: '/services/tear-trough' },
   ],
-  // Find-path state hubs (show every clinic + provider in the state, treatment-agnostic).
+  // State hubs: every clinic in the state, treatment-agnostic.
+  //
+  // These moved from the bare `/new-york` shape to `/clinics/new-york` on
+  // 2026-09-09, when the location tree consolidated under /clinics and the old
+  // shape started 404ing. The footer renders on every page, so these six plus
+  // the six below were the only dead links left on the whole site after that
+  // migration, and no grep in the migration notes caught them: the hrefs are
+  // plain strings in this array, not `href={`...`}` in a component.
   topStates: [
-    { label: 'New York', href: '/new-york' },
-    { label: 'California', href: '/california' },
-    { label: 'Florida', href: '/florida' },
-    { label: 'Texas', href: '/texas' },
-    { label: 'Illinois', href: '/illinois' },
-    { label: 'Colorado', href: '/colorado' },
+    { label: 'New York', href: '/clinics/new-york' },
+    { label: 'California', href: '/clinics/california' },
+    { label: 'Florida', href: '/clinics/florida' },
+    { label: 'Texas', href: '/clinics/texas' },
+    { label: 'Illinois', href: '/clinics/illinois' },
+    { label: 'Colorado', href: '/clinics/colorado' },
   ],
-  // Find-path city hubs — slugs match the canonical metro Locations in the DB.
+  // City hubs. Slugs match the canonical metro Locations in the DB.
   cities: [
-    { label: 'New York City', href: '/new-york/new-york-ny' },
-    { label: 'Los Angeles', href: '/california/los-angeles-ca' },
-    { label: 'Miami', href: '/florida/miami-fl' },
-    { label: 'Chicago', href: '/illinois/chicago-il' },
-    { label: 'Houston', href: '/texas/houston-tx' },
-    { label: 'Austin', href: '/texas/austin-tx' },
+    { label: 'New York City', href: '/clinics/new-york/new-york-ny' },
+    { label: 'Los Angeles', href: '/clinics/california/los-angeles-ca' },
+    { label: 'Miami', href: '/clinics/florida/miami-fl' },
+    { label: 'Chicago', href: '/clinics/illinois/chicago-il' },
+    { label: 'Houston', href: '/clinics/texas/houston-tx' },
+    { label: 'Austin', href: '/clinics/texas/austin-tx' },
   ],
   // Every href here must match a real Guides.slug. Four of the six that used to
   // sit in this list (botox, first-time-botox, botox-cost-2026, md-vs-np-vs-rn)
