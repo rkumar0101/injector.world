@@ -18,7 +18,7 @@ type Props = { data: ServicePillarData; banner: ActiveBanner | null; schema: obj
    were dropped from the hero along with the Worth-It badge and the indices. */
 
 export function ServicePillarPage({ data, banner, schema }: Props) {
-  const { service, guide, serviceClinics, faqs, relatedQAs, states, allCities, relatedBrands, totalClinics } = data
+  const { service, guide, serviceClinics, faqs, relatedQAs, states, relatedBrands, totalClinics } = data
 
   return (
     <>
@@ -44,9 +44,10 @@ export function ServicePillarPage({ data, banner, schema }: Props) {
 
       {/* Hero */}
       {/* Trimmed 2026-08-07 (client request) to match the brand pillar hero:
-          headline, tagline, clinic count and the state/city dropdowns. The
-          category overline, short description, average cost, Worth-It badge,
-          service indices and body-area chips all came out. */}
+          headline, tagline, clinic count and the state picker. The category
+          overline, short description, average cost, Worth-It badge, service
+          indices and body-area chips all came out. The city dropdown that sat
+          beside the state one was removed 2026-09-08. */}
       <section className="bg-surface-warm pb-8 pt-8 md:pb-10 md:pt-10">
         <div className="max-canvas max-w-4xl">
           <h1 className="font-serif text-h1-m md:text-h1 font-medium leading-tight tracking-tight text-ink-primary mb-3">
@@ -62,13 +63,7 @@ export function ServicePillarPage({ data, banner, schema }: Props) {
             </div>
           )}
 
-          <LocationPicker
-            states={states}
-            allCities={allCities.map((c) => ({
-              name: c.name, slug: c.slug, stateCode: c.stateCode, stateSlug: c.stateSlug, count: c.providerCount,
-            }))}
-            basePath={`/services/${service.slug}`}
-          />
+          <LocationPicker states={states} basePath={`/services/${service.slug}`} />
         </div>
       </section>
 
@@ -76,9 +71,13 @@ export function ServicePillarPage({ data, banner, schema }: Props) {
         <div className="max-canvas space-y-16">
 
           {/* The IP state hint, the full-width state grid and the "Popular:"
-              city row lived here until 2026-08-07 (client request). The hero's
-              dropdowns replace them, and their menu items are real links, so
-              the crawl path to state and city pages survives. */}
+              city row lived here until 2026-08-07 (client request), replaced by
+              the hero picker. That swap silently broke the crawl path: the
+              picker's links were real <Link>s but were only mounted while the
+              menu was open, so they never reached the served HTML. Fixed
+              2026-09-07 by keeping the menu in the DOM and hiding it with CSS.
+              Cities are reached from the state page, which lists them as plain
+              anchors. */}
 
           {/* Directory: clinics offering this service */}
           <div>

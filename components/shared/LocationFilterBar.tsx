@@ -12,9 +12,15 @@ type CityOption = { name: string; slug: string; clinicCount: number }
  * so there is one filter, not two parallel implementations.
  *
  * Controlled: the caller owns `selectedState`/`selectedCity` and decides what
- * happens on change (client-side re-fetch on /clinics, URL navigation on
- * /search) -- this component only renders the dropdowns and fetches the city
- * list for whichever state is selected.
+ * happens on change (URL navigation on both /clinics and /search) -- this
+ * component only renders the dropdowns and fetches the city list for whichever
+ * state is selected.
+ *
+ * `onLocationChange` also receives the matching route slugs when they are
+ * known, so a caller that navigates does not have to look them up a second
+ * time. `citySlug` is empty when the state changed rather than the city, and
+ * either slug can be missing when the selection has no location record behind
+ * it, so callers must handle an absent slug.
  */
 export function LocationFilterBar({
   stateOptions,
@@ -26,7 +32,11 @@ export function LocationFilterBar({
   stateOptions: StateFilterOption[]
   selectedState: string
   selectedCity: string
-  onLocationChange: (stateCode: string, city: string) => void
+  onLocationChange: (
+    stateCode: string,
+    city: string,
+    slugs?: { stateSlug: string; citySlug: string },
+  ) => void
   disabled?: boolean
 }) {
   const [cityOptions, setCityOptions] = useState<CityOption[]>([])
@@ -47,13 +57,18 @@ export function LocationFilterBar({
     return () => ctrl.abort()
   }, [selectedState])
 
-  const selectedStateName = stateOptions.find((s) => s.code === selectedState)?.name
+  const selectedStateOption = stateOptions.find((s) => s.code === selectedState)
+  const selectedStateName = selectedStateOption?.name
 
   return (
     <>
       <select
         value={selectedState}
-        onChange={(e) => onLocationChange(e.target.value, '')}
+        onChange={(e) => {
+          const code = e.target.value
+          const slug = stateOptions.find((s) => s.code === code)?.slug ?? ''
+          onLocationChange(code, '', { stateSlug: slug, citySlug: '' })
+        }}
         disabled={disabled}
         className="text-body-sm border border-border rounded-control px-3 py-1.5 bg-surface-canvas text-ink-primary focus:outline-none focus:border-brand-accent disabled:opacity-50"
       >
@@ -68,7 +83,14 @@ export function LocationFilterBar({
       {selectedState && (
         <select
           value={selectedCity}
-          onChange={(e) => onLocationChange(selectedState, e.target.value)}
+          onChange={(e) => {
+            const city = e.target.value
+            const citySlug = cityOptions.find((c) => c.name === city)?.slug ?? ''
+            onLocationChange(selectedState, city, {
+              stateSlug: selectedStateOption?.slug ?? '',
+              citySlug,
+            })
+          }}
           disabled={disabled || loadingCities || cityOptions.length === 0}
           className="text-body-sm border border-border rounded-control px-3 py-1.5 bg-surface-canvas text-ink-primary focus:outline-none focus:border-brand-accent disabled:opacity-50"
         >

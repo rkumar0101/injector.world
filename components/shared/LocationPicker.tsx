@@ -4,60 +4,54 @@ import { useEffect, useRef, useState } from 'react'
 import Link from 'next/link'
 
 export type LocationPickerState = { code: string; name: string; slug: string }
-export type LocationPickerCity = { name: string; slug: string; stateCode: string; stateSlug: string; count: number }
 
 type Props = {
   states: LocationPickerState[]
-  allCities: LocationPickerCity[]
   /** URL prefix the picker navigates under, e.g. "/services/botox" or
    * "/brands/juvederm". Kept as a plain string (not a function) because this
    * is a client component and server pages cannot pass functions across the
-   * RSC boundary. Final URL: `${basePath}/${city.stateSlug}/${city.slug}`. */
+   * RSC boundary. Final URL: `${basePath}/${state.slug}`. */
   basePath: string
 }
 
 /**
- * Compact state -> city finder that sits inside the brand and service pillar
- * heroes.
+ * State picker in the brand and service pillar heroes. Pick a state, land on
+ * that brand's or service's page for it.
  *
  * Rebuilt 2026-08-07 (client request). It used to be a full-width panel: 50
  * state pill buttons followed by a city search box, which ate most of a screen.
- * Now it is two dropdowns.
  *
- * The menu items are real <Link>s, not <option>s or buttons. A comment here
- * used to claim that alone kept the pillar -> state -> city crawl path alive.
- * It did not: the menus were mounted only while open (`{openMenu === 'state' &&
- * ...}`), so the links were absent from the served HTML and a crawler, which
- * never clicks, saw no way out of this page. As of 2026-09-07 the state menu is
- * always in the DOM and hidden with CSS instead, so all 50 state links ship in
- * the HTML. Closed links carry tabIndex={-1} so the visual behaviour and the tab
- * order are unchanged.
+ * Two things were wrong with the dropdown that replaced it, both fixed
+ * 2026-09-07:
  *
- * The city menu still mounts on demand. Its contents depend on which state the
- * visitor picked, so there is no static set of city links to render. The city
- * layer is crawled from the state pages instead, which list their cities as
- * plain anchors.
+ * 1. The menu was mounted only while open (`{openMenu === 'state' && ...}`), so
+ *    its links never reached the served HTML. A comment here used to claim that
+ *    rendering real <Link>s rather than <option>s kept the pillar -> state crawl
+ *    path alive; it did not, because a crawler never clicks. The menu now stays
+ *    in the DOM and is hidden with CSS, so all 50 state links ship in the HTML.
+ *    Closed links carry tabIndex={-1}, so the visual behaviour and the tab order
+ *    are unchanged.
+ * 2. A state link called `e.preventDefault()` and opened a second, city-level
+ *    dropdown instead of navigating. So a crawler could follow the href but a
+ *    human could not: clicking a state went nowhere.
+ *
+ * The city dropdown is gone (founder call, 2026-09-08). Once the state link
+ * navigates there is nothing left to populate a city menu with, and a control
+ * that can never leave its "Pick a state first" disabled state is worse than no
+ * control. The city step still exists and is one click further on: every state
+ * page lists its own cities as plain anchors.
  */
-export function LocationPicker({ states, allCities, basePath }: Props) {
-  const [openMenu, setOpenMenu] = useState<'state' | 'city' | null>(null)
-  const [selectedState, setSelectedState] = useState<LocationPickerState | null>(null)
-  const [query, setQuery] = useState('')
+export function LocationPicker({ states, basePath }: Props) {
+  const [open, setOpen] = useState(false)
   const containerRef = useRef<HTMLDivElement>(null)
 
-  const citiesInState = selectedState
-    ? allCities.filter((c) => c.stateCode === selectedState.code)
-    : []
-  const filteredCities = query
-    ? citiesInState.filter((c) => c.name.toLowerCase().includes(query.toLowerCase()))
-    : citiesInState
-
   useEffect(() => {
-    if (!openMenu) return
+    if (!open) return
     function onClickOutside(e: MouseEvent) {
-      if (containerRef.current && !containerRef.current.contains(e.target as Node)) setOpenMenu(null)
+      if (containerRef.current && !containerRef.current.contains(e.target as Node)) setOpen(false)
     }
     function onKey(e: KeyboardEvent) {
-      if (e.key === 'Escape') setOpenMenu(null)
+      if (e.key === 'Escape') setOpen(false)
     }
     document.addEventListener('mousedown', onClickOutside)
     document.addEventListener('keydown', onKey)
@@ -65,104 +59,43 @@ export function LocationPicker({ states, allCities, basePath }: Props) {
       document.removeEventListener('mousedown', onClickOutside)
       document.removeEventListener('keydown', onKey)
     }
-  }, [openMenu])
+  }, [open])
 
   const triggerCls =
-    'flex w-full items-center justify-between gap-3 rounded-control border border-border bg-surface-canvas px-4 py-2.5 text-body-sm text-ink-primary transition hover:border-brand-accent disabled:cursor-not-allowed disabled:opacity-50'
+    'flex w-full items-center justify-between gap-3 rounded-control border border-border bg-surface-canvas px-4 py-2.5 text-body-sm text-ink-primary transition hover:border-brand-accent'
   const menuCls =
     'absolute left-0 right-0 top-full z-30 mt-1.5 max-h-72 overflow-y-auto rounded-control border border-border bg-surface-canvas py-1 shadow-lg'
   const itemCls =
     'flex items-center justify-between gap-3 px-4 py-2 text-body-sm text-ink-secondary transition hover:bg-surface hover:text-brand-accent'
-  // Closed menus stay mounted so their links ship in the HTML for crawlers.
+  // The closed menu stays mounted so its links ship in the HTML for crawlers.
   // Zero-size, transparent and click-through, so nothing is visible or in the
   // way; the links inside also get tabIndex={-1} so tabbing skips them.
   const hiddenCls = 'pointer-events-none absolute h-0 w-0 overflow-hidden opacity-0'
 
   return (
-    <div ref={containerRef} className="mt-6 grid gap-3 sm:max-w-xl sm:grid-cols-2">
-      {/* State */}
-      <div className="relative">
-        <button
-          type="button"
-          onClick={() => setOpenMenu((m) => (m === 'state' ? null : 'state'))}
-          aria-expanded={openMenu === 'state'}
-          className={triggerCls}
-        >
-          <span className={selectedState ? '' : 'text-ink-tertiary'}>
-            {selectedState ? selectedState.name : 'Select a state'}
-          </span>
-          <Chevron open={openMenu === 'state'} />
-        </button>
+    <div ref={containerRef} className="relative mt-6 sm:max-w-xs">
+      <button
+        type="button"
+        onClick={() => setOpen((o) => !o)}
+        aria-expanded={open}
+        className={triggerCls}
+      >
+        <span className="text-ink-tertiary">Select a state</span>
+        <Chevron open={open} />
+      </button>
 
-        <div
-          className={openMenu === 'state' ? menuCls : hiddenCls}
-          aria-hidden={openMenu !== 'state'}
-        >
-          {states.map((state) => (
-            <Link
-              key={state.code}
-              href={`${basePath}/${state.slug}`}
-              tabIndex={openMenu === 'state' ? undefined : -1}
-              onClick={(e) => {
-                // Picking a state filters the city menu rather than navigating.
-                // The href is real and always in the HTML, so a crawler follows
-                // it to the state page.
-                e.preventDefault()
-                setSelectedState(state)
-                setQuery('')
-                setOpenMenu('city')
-              }}
-              className={itemCls}
-            >
-              {state.name}
-            </Link>
-          ))}
-        </div>
-      </div>
-
-      {/* City */}
-      <div className="relative">
-        <button
-          type="button"
-          disabled={!selectedState}
-          onClick={() => setOpenMenu((m) => (m === 'city' ? null : 'city'))}
-          aria-expanded={openMenu === 'city'}
-          className={triggerCls}
-        >
-          <span className="text-ink-tertiary">
-            {selectedState ? 'Select a city' : 'Pick a state first'}
-          </span>
-          <Chevron open={openMenu === 'city'} />
-        </button>
-
-        {openMenu === 'city' && selectedState && (
-          <div className={menuCls}>
-            <div className="px-3 pb-1.5 pt-1">
-              <input
-                autoFocus
-                value={query}
-                onChange={(e) => setQuery(e.target.value)}
-                placeholder={`Search cities in ${selectedState.name}`}
-                className="w-full rounded-control border border-border bg-surface-canvas px-3 py-2 text-body-sm text-ink-primary placeholder:text-ink-tertiary focus:border-brand-accent focus:outline-none"
-              />
-            </div>
-            {filteredCities.length === 0 ? (
-              <p className="px-4 py-2 text-body-sm text-ink-tertiary">No cities match.</p>
-            ) : (
-              filteredCities.map((city) => (
-                <Link
-                  key={`${city.stateSlug}-${city.slug}`}
-                  href={`${basePath}/${city.stateSlug}/${city.slug}`}
-                  onClick={() => setOpenMenu(null)}
-                  className={itemCls}
-                >
-                  <span>{city.name}</span>
-                  {city.count > 0 && <span className="text-ink-tertiary">{city.count}</span>}
-                </Link>
-              ))
-            )}
-          </div>
-        )}
+      <div className={open ? menuCls : hiddenCls} aria-hidden={!open}>
+        {states.map((state) => (
+          <Link
+            key={state.code}
+            href={`${basePath}/${state.slug}`}
+            tabIndex={open ? undefined : -1}
+            onClick={() => setOpen(false)}
+            className={itemCls}
+          >
+            {state.name}
+          </Link>
+        ))}
       </div>
     </div>
   )

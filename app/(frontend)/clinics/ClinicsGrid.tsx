@@ -2,6 +2,7 @@
 
 import dynamic from 'next/dynamic'
 import Link from 'next/link'
+import { useRouter } from 'next/navigation'
 import { useEffect, useMemo, useRef, useState } from 'react'
 import type { ClinicListItem } from '@/lib/clinic-queries'
 import type { StateFilterOption } from '@/lib/location-queries'
@@ -51,6 +52,7 @@ export function ClinicsGrid({
   brandOptions,
   loadFailed = false,
 }: Props) {
+  const router = useRouter()
   const [viewMode, setViewMode] = useState<'list' | 'map'>('list')
   const [listingFilters, setListingFilters] = useState<ListingFilterValues>(DEFAULT_LISTING_FILTERS)
   const [allClinics, setAllClinics] = useState(initialClinics)
@@ -142,12 +144,56 @@ export function ClinicsGrid({
     await fetchClinics({ stateCode: selectedState, city, nextPage: 1, append: false })
   }
 
-  async function handleLocationChange(stateCode: string, city: string) {
-    if (stateCode !== selectedState) {
-      await handleStateChange(stateCode)
-    } else {
-      await handleCityChange(city)
+  /**
+   * Picking a location navigates to the Find path page for it instead of
+   * filtering this page in JS. Filtering in place left the URL on /clinics, so
+   * the location a visitor picked was not linkable, not shareable and had no
+   * page of its own for a crawler to reach. /texas and /texas/houston-tx are
+   * real pages that already carry the right heading, count, city grid and
+   * clinic list.
+   *
+   * Clearing back to "All states" stays on this page: there is no location to
+   * navigate to, so it just refetches the unfiltered listing.
+   *
+   * A missing slug means the selection has no location record behind it. That
+   * falls back to the old in-place filter rather than pushing a url that would
+   * 404.
+   */
+  async function handleLocationChange(
+    stateCode: string,
+    city: string,
+    slugs?: { stateSlug: string; citySlug: string },
+  ) {
+    if (!stateCode) {
+      await handleStateChange('')
+      return
     }
+
+    const stateSlug = slugs?.stateSlug || stateOptions.find((s) => s.code === stateCode)?.slug || ''
+
+    if (stateCode !== selectedState) {
+      if (stateSlug) {
+        router.push(`/${stateSlug}`)
+        return
+      }
+      await handleStateChange(stateCode)
+      return
+    }
+
+    if (!city) {
+      if (stateSlug) {
+        router.push(`/${stateSlug}`)
+        return
+      }
+      await handleCityChange('')
+      return
+    }
+
+    if (stateSlug && slugs?.citySlug) {
+      router.push(`/${stateSlug}/${slugs.citySlug}`)
+      return
+    }
+    await handleCityChange(city)
   }
 
   async function loadMore() {

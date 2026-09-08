@@ -10,7 +10,7 @@ import type { BrandPillarData } from '@/lib/brand-queries'
 type Props = { data: BrandPillarData; schema: object[] }
 
 export function BrandPillarPage({ data, schema }: Props) {
-  const { brand, topClinics, states, allCities, relatedServices, faqs, totalClinics } = data
+  const { brand, topClinics, states, relatedServices, faqs, totalClinics } = data
 
   return (
     <>
@@ -35,9 +35,10 @@ export function BrandPillarPage({ data, schema }: Props) {
 
       {/* Hero */}
       {/* Trimmed 2026-08-07 (client request): the hero keeps the headline, the
-          tagline, the clinic count and the state/city dropdowns. The short
-          description, the manufacturer / longevity / downtime chips and the
-          average cost line all came out, and the padding came down with them. */}
+          tagline, the clinic count and the state picker. The short description,
+          the manufacturer / longevity / downtime chips and the average cost line
+          all came out, and the padding came down with them. The city dropdown
+          that sat beside the state one was removed 2026-09-08. */}
       <section className="bg-surface-warm border-b border-border pb-8 pt-8 md:pb-10 md:pt-10">
         <div className="max-canvas max-w-4xl">
           <h1 className="font-serif text-h1-m md:text-h1 font-medium leading-tight tracking-tight text-ink-primary mb-3">
@@ -53,13 +54,7 @@ export function BrandPillarPage({ data, schema }: Props) {
             </div>
           )}
 
-          <LocationPicker
-            states={states}
-            allCities={allCities.map((c) => ({
-              name: c.name, slug: c.slug, stateCode: c.stateCode, stateSlug: c.stateSlug, count: c.clinicCount,
-            }))}
-            basePath={`/brands/${brand.slug}`}
-          />
+          <LocationPicker states={states} basePath={`/brands/${brand.slug}`} />
         </div>
       </section>
 
@@ -67,9 +62,12 @@ export function BrandPillarPage({ data, schema }: Props) {
         <div className="max-canvas space-y-16">
 
           {/* The full-width state grid and the "Popular:" city row lived here
-              until 2026-08-07 (client request). Both are replaced by the
-              dropdowns in the hero, whose menu items are real links, so the
-              crawl path to state and city pages survives. */}
+              until 2026-08-07 (client request), replaced by the hero picker.
+              That swap silently broke the crawl path: the picker's links were
+              real <Link>s but were only mounted while the menu was open, so they
+              never reached the served HTML. Fixed 2026-09-07 by keeping the menu
+              in the DOM and hiding it with CSS. Cities are reached from the
+              state page, which lists them as plain anchors. */}
 
           {/* Top clinics listing with services filter */}
           <div>
