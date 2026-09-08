@@ -238,6 +238,9 @@ export function claimAdminEmail(opts: {
   claimantName: string
   claimantEmail: string
   claimantPhone: string
+  /** Claimant's own mobile / inbox, when they gave one. */
+  directPhone?: string
+  directEmail?: string
   claimType: string
   targetName: string
   roleAtPractice: string
@@ -246,15 +249,17 @@ export function claimAdminEmail(opts: {
   message: string
   claimId: string | number
 }): { html: string; text: string } {
-  const { claimantName, claimantEmail, claimantPhone, claimType, targetName, roleAtPractice, licenseNumber, npiNumber, message, claimId } = opts
+  const { claimantName, claimantEmail, claimantPhone, directPhone = '', directEmail = '', claimType, targetName, roleAtPractice, licenseNumber, npiNumber, message, claimId } = opts
   const adminLink = `${SITE_URL}/admin/collections/claims/${claimId}`
 
   const bodyHtml = `
     ${p(`A new profile claim has been submitted for review.`)}
     ${table([
       row('Claimant', claimantName),
-      row('Email', claimantEmail),
-      claimantPhone ? row('Phone', claimantPhone) : '',
+      row('Clinic email', claimantEmail),
+      claimantPhone ? row('Clinic phone', claimantPhone) : '',
+      directEmail ? row('Direct email', directEmail) : '',
+      directPhone ? row('Direct number', directPhone) : '',
       row('Claim type', claimType),
       row('Profile', targetName),
       row('Role', roleAtPractice),
@@ -265,7 +270,7 @@ export function claimAdminEmail(opts: {
     <p style="margin:0 0 20px;">${primaryButton(adminLink, 'Review in admin')}</p>
   `
 
-  const text = `New ${claimType} claim for "${targetName}"\n\nClaimant: ${claimantName}\nEmail: ${claimantEmail}\n${claimantPhone ? `Phone: ${claimantPhone}\n` : ''}Role: ${roleAtPractice}\n${licenseNumber ? `License: ${licenseNumber}\n` : ''}${npiNumber ? `NPI: ${npiNumber}\n` : ''}${message ? `\nMessage:\n${message}\n` : ''}\nReview: ${adminLink}`
+  const text = `New ${claimType} claim for "${targetName}"\n\nClaimant: ${claimantName}\nEmail: ${claimantEmail}\n${claimantPhone ? `Clinic phone: ${claimantPhone}\n` : ''}${directEmail ? `Direct email: ${directEmail}\n` : ''}${directPhone ? `Direct number: ${directPhone}\n` : ''}Role: ${roleAtPractice}\n${licenseNumber ? `License: ${licenseNumber}\n` : ''}${npiNumber ? `NPI: ${npiNumber}\n` : ''}${message ? `\nMessage:\n${message}\n` : ''}\nReview: ${adminLink}`
 
   return {
     html: emailShell({ siteUrl: SITE_URL, heading: `New ${claimType} claim: ${targetName}`, bodyHtml }),

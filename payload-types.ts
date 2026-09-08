@@ -1651,6 +1651,8 @@ export interface Claim {
   claimantName: string;
   claimantEmail: string;
   claimantPhone?: string | null;
+  directPhone?: string | null;
+  directEmail?: string | null;
   /**
    * True once the claimant confirmed the code we emailed. If false, they never proved they own this inbox — verify manually before approving.
    */
@@ -2796,6 +2798,8 @@ export interface ClaimsSelect<T extends boolean = true> {
   claimantName?: T;
   claimantEmail?: T;
   claimantPhone?: T;
+  directPhone?: T;
+  directEmail?: T;
   emailVerified?: T;
   emailMatch?: T;
   verificationCode?: T;

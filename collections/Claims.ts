@@ -469,7 +469,24 @@ export const Claims: CollectionConfig = {
     },
     { name: 'claimantName', type: 'text', required: true },
     { name: 'claimantEmail', type: 'email', required: true, index: true },
-    { name: 'claimantPhone', type: 'text' },
+    {
+      name: 'claimantPhone',
+      type: 'text',
+      admin: { description: "The clinic's public phone number." },
+    },
+    {
+      // Direct line + personal inbox for the person claiming. The clinic's own
+      // contact details are often a front desk, so outreach needs a way to
+      // reach the owner directly. Both optional — never gate a claim on them.
+      name: 'directPhone',
+      type: 'text',
+      admin: { description: "Claimant's direct mobile number." },
+    },
+    {
+      name: 'directEmail',
+      type: 'email',
+      admin: { description: "Claimant's direct email address." },
+    },
     {
       // Set true once the claimant confirms the 6-digit code emailed to their
       // address (POST /api/claims/verify). False means they never proved they

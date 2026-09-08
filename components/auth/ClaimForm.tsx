@@ -31,6 +31,8 @@ export function ClaimForm({ claimType, targetId, targetName, initialEmail = '', 
     claimantName: '',
     claimantEmail: initialEmail,
     claimantPhone: '',
+    directPhone: '',
+    directEmail: '',
     roleAtPractice: '',
     licenseNumber: '',
     npiNumber: '',
@@ -77,6 +79,8 @@ export function ClaimForm({ claimType, targetId, targetName, initialEmail = '', 
       claimantName: fields.claimantName,
       claimantEmail: fields.claimantEmail,
       claimantPhone: fields.claimantPhone || undefined,
+      directPhone: fields.directPhone || undefined,
+      directEmail: fields.directEmail || undefined,
       roleAtPractice: fields.roleAtPractice,
       licenseNumber: fields.licenseNumber || undefined,
       npiNumber: fields.npiNumber || undefined,
@@ -291,30 +295,19 @@ export function ClaimForm({ claimType, targetId, targetName, initialEmail = '', 
         />
         <Field
           id="claimantEmail"
-          label="Email address"
+          label="Your clinic email"
           type="email"
           required
           value={fields.claimantEmail}
           onChange={(v) => set('claimantEmail', v)}
           error={errors.claimantEmail}
-          placeholder="jane@clinic.com"
+          placeholder="hello@yourclinic.com"
           autoComplete="email"
           inputMode="email"
         />
       </div>
 
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-        <Field
-          id="claimantPhone"
-          label="Phone number"
-          type="tel"
-          value={fields.claimantPhone}
-          onChange={(v) => set('claimantPhone', v)}
-          error={errors.claimantPhone}
-          placeholder="(555) 000-0000"
-          autoComplete="tel"
-          inputMode="tel"
-        />
         <Field
           id="roleAtPractice"
           label="Your role at the practice"
@@ -324,6 +317,44 @@ export function ClaimForm({ claimType, targetId, targetName, initialEmail = '', 
           error={errors.roleAtPractice}
           placeholder="Owner, Medical Director, Lead Injector..."
           autoComplete="organization-title"
+        />
+        <Field
+          id="claimantPhone"
+          label="Your clinic phone number"
+          type="tel"
+          value={fields.claimantPhone}
+          onChange={(v) => set('claimantPhone', v)}
+          error={errors.claimantPhone}
+          placeholder="(555) 000-0000"
+          autoComplete="tel"
+          inputMode="tel"
+        />
+      </div>
+
+      {/* Direct contact: the clinic line is usually a front desk, so we also
+          ask how to reach the claimant personally. Both optional. */}
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+        <Field
+          id="directPhone"
+          label="Your direct number (mobile)"
+          type="tel"
+          value={fields.directPhone}
+          onChange={(v) => set('directPhone', v)}
+          error={errors.directPhone}
+          placeholder="(555) 000-0000"
+          autoComplete="tel"
+          inputMode="tel"
+        />
+        <Field
+          id="directEmail"
+          label="Your direct email address"
+          type="email"
+          value={fields.directEmail}
+          onChange={(v) => set('directEmail', v)}
+          error={errors.directEmail}
+          placeholder="jane@gmail.com"
+          autoComplete="email"
+          inputMode="email"
         />
       </div>
 
@@ -354,7 +385,7 @@ export function ClaimForm({ claimType, targetId, targetName, initialEmail = '', 
       {!isProvider && (
         <Field
           id="businessProof"
-          label="Business proof (website, LLC docs, Google Business URL)"
+          label="Your clinic website"
           value={fields.businessProof}
           onChange={(v) => set('businessProof', v)}
           error={errors.businessProof}
