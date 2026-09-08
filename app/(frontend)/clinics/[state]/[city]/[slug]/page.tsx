@@ -869,8 +869,8 @@ function buildSchema(clinic: ClinicDetail, canonicalUrl: string, faqs: ClinicFaq
     itemListElement: [
       { '@type': 'ListItem', position: 1, name: 'Home', item: SITE_URL },
       { '@type': 'ListItem', position: 2, name: 'Clinics', item: `${SITE_URL}/clinics` },
-      { '@type': 'ListItem', position: 3, name: titleFromSlug(clinic.stateSlug), item: `${SITE_URL}/${clinic.stateSlug}` },
-      { '@type': 'ListItem', position: 4, name: clinic.city, item: `${SITE_URL}/${clinic.stateSlug}/${clinic.citySlug}` },
+      { '@type': 'ListItem', position: 3, name: titleFromSlug(clinic.stateSlug), item: `${SITE_URL}/clinics/${clinic.stateSlug}` },
+      { '@type': 'ListItem', position: 4, name: clinic.city, item: `${SITE_URL}/clinics/${clinic.stateSlug}/${clinic.citySlug}` },
       { '@type': 'ListItem', position: 5, name: clinic.clinicName, item: canonicalUrl },
     ],
   }

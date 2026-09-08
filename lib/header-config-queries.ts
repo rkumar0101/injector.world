@@ -11,6 +11,7 @@ export type HeaderNavData = {
   services: HeaderNavItem[]
   locations: HeaderNavItem[]
   brands: HeaderNavItem[]
+  clinics: HeaderNavItem[]
 }
 
 // ─── Fallback defaults (used until admin configures Header Editor) ─────────────
@@ -52,6 +53,32 @@ const FALLBACK_LOCATIONS: HeaderNavItem[] = [
   { label: 'Arizona', href: '/services/botox/arizona' },
   { label: 'Washington', href: '/services/botox/washington' },
   { label: 'Massachusetts', href: '/services/botox/massachusetts' },
+]
+
+/**
+ * State links for the Clinics accordion, added 2026-09-09 when the location
+ * tree consolidated under /clinics.
+ *
+ * The ten largest states by city count, measured 2026-09-07. Ten matches what
+ * every other section carries.
+ *
+ * These are a fallback, same as the lists above: when the admin has saved
+ * featuredLocations in the Header Editor, the state rows in it win. There is no
+ * separate `featuredClinicStates` field on HeaderConfig, deliberately -- adding
+ * one is a schema change, and featuredLocations already holds exactly the state
+ * rows this section needs.
+ */
+const FALLBACK_CLINIC_STATES: HeaderNavItem[] = [
+  { label: 'California', href: '/clinics/california' },
+  { label: 'New York', href: '/clinics/new-york' },
+  { label: 'New Jersey', href: '/clinics/new-jersey' },
+  { label: 'Pennsylvania', href: '/clinics/pennsylvania' },
+  { label: 'Texas', href: '/clinics/texas' },
+  { label: 'Ohio', href: '/clinics/ohio' },
+  { label: 'Florida', href: '/clinics/florida' },
+  { label: 'Illinois', href: '/clinics/illinois' },
+  { label: 'Massachusetts', href: '/clinics/massachusetts' },
+  { label: 'Michigan', href: '/clinics/michigan' },
 ]
 
 const FALLBACK_BRANDS: HeaderNavItem[] = [
@@ -96,7 +123,7 @@ export const getHeaderNavData = cache(async function getHeaderNavData(): Promise
       getStateCodeToSlug(payload),
     ])
 
-    if (!config) return { services: FALLBACK_SERVICES, locations: FALLBACK_LOCATIONS, brands: FALLBACK_BRANDS }
+    if (!config) return { services: FALLBACK_SERVICES, locations: FALLBACK_LOCATIONS, brands: FALLBACK_BRANDS, clinics: FALLBACK_CLINIC_STATES }
 
     // ── Services ────────────────────────────────────────────────────────────
     const services: HeaderNavItem[] =
@@ -127,8 +154,20 @@ export const getHeaderNavData = cache(async function getHeaderNavData(): Promise
             .map((b: any) => ({ label: b.name as string, href: `/brands/${b.slug}` }))
         : FALLBACK_BRANDS
 
-    return { services, locations, brands }
+    // ── Clinics (state hubs) ────────────────────────────────────────────────
+    // Reuses featuredLocations rather than a new global field: the state rows in
+    // it are exactly this list, just pointed at /clinics/<slug> instead of at
+    // /services/botox/<slug>. City rows are skipped, since a city hub url needs
+    // its parent state slug and this section is state level.
+    const configuredClinicStates: HeaderNavItem[] = Array.isArray((config as any).featuredLocations)
+      ? (config as any).featuredLocations
+          .filter((l: any) => l && typeof l === 'object' && l.name && l.slug && l.kind === 'state')
+          .map((l: any) => ({ label: l.name as string, href: `/clinics/${l.slug}` }))
+      : []
+    const clinics = configuredClinicStates.length > 0 ? configuredClinicStates : FALLBACK_CLINIC_STATES
+
+    return { services, locations, brands, clinics }
   } catch {
-    return { services: FALLBACK_SERVICES, locations: FALLBACK_LOCATIONS, brands: FALLBACK_BRANDS }
+    return { services: FALLBACK_SERVICES, locations: FALLBACK_LOCATIONS, brands: FALLBACK_BRANDS, clinics: FALLBACK_CLINIC_STATES }
   }
 })

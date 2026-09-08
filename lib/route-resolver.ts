@@ -7,9 +7,12 @@ import { getPayloadInstance } from './payload-server'
 //   /services/[svc]/[state]                     → service-state
 //   /services/[svc]/[state]/[city]              → service-city-directory (money page)
 //
-// Find path (UX — indexed for live markets)
-//   /[state]                         → state-hub
-//   /[state]/[city]                  → city-hub
+// The Find path (`/[state]`, `/[state]/[city]`) is GONE as of 2026-09-09. State
+// and city hubs live under `/clinics/[state]` and `/clinics/[state]/[city]`, as
+// real pages with their own route files, so the catch-all never sees them. A
+// bare `/alabama` now falls through to not-found on purpose. There is no
+// redirect layer: the site is sitewide noindex, so there was no link equity to
+// preserve. Do not re-add those branches here.
 //
 // Neighborhoods are NOT routable pages. They surface as a filter on the city
 // pages (driven by clinic data). Any neighborhood URL 404s.
@@ -26,8 +29,6 @@ export type ResolvedRoute =
   | { type: 'brand-pillar'; brandSlug: string }
   | { type: 'brand-state'; brandSlug: string; stateSlug: string }
   | { type: 'brand-city-directory'; brandSlug: string; stateSlug: string; citySlug: string }
-  | { type: 'state-hub'; stateSlug: string }
-  | { type: 'city-hub'; stateSlug: string; citySlug: string }
   | { type: 'not-found' }
 
 type LocationEntry = {
@@ -146,45 +147,57 @@ export async function resolveRoute(segments: string[]): Promise<ResolvedRoute> {
     return { type: 'not-found' }
   }
 
-  // ── Find path (UX — state / city / neighborhood) ──────────────────────────────
-
-  // ── 1 segment ────────────────────────────────────────────────────────────────
-  if (segments.length === 1) {
-    const [a] = segments
-    const loc = lm.get(a)
-    if (loc?.kind === 'state') return { type: 'state-hub', stateSlug: a }
-    return { type: 'not-found' }
-  }
-
-  // ── 2 segments ────────────────────────────────────────────────────────────────
-  if (segments.length === 2) {
-    const [a, b] = segments
-    const aLoc = lm.get(a)
-
-    if (aLoc?.kind === 'state') {
-      // state + city  →  city-hub (Find path)
-      const bLoc = lm.get(b)
-      if (bLoc?.kind === 'metro' || bLoc?.kind === 'city')
-        return { type: 'city-hub', stateSlug: a, citySlug: b }
-      return { type: 'not-found' }
-    }
-
-    return { type: 'not-found' }
-  }
-
-  // ── 3+ segments (Find path) ──────────────────────────────────────────────────
-  // Neighborhoods are no longer routable, so the Find path stops at city.
+  // ── Everything else ──────────────────────────────────────────────────────────
+  // The catch-all serves the Services and Brands paths and nothing else. Bare
+  // location urls (`/alabama`, `/alabama/birmingham-al`) used to land here and
+  // now 404 by design: those pages moved under `/clinics/*` and have their own
+  // route files. See the note at the top of this file.
   return { type: 'not-found' }
 }
 
-// getAllRoutePaths — used by generateStaticParams.
-// Pre-renders only paths backed by real data; ISR handles the rest on first visit.
-export async function getAllRoutePaths(): Promise<string[][]> {
+/**
+ * Slug validation for the `/clinics/[state]` and `/clinics/[state]/[city]` route
+ * files.
+ *
+ * Those are real pages now, not catch-all routes, so they cannot ask
+ * `resolveRoute` what a bare `/alabama` is: that shape deliberately resolves to
+ * not-found. They ask here instead, against the same cached locations map, so a
+ * junk slug still 404s rather than rendering an empty hub.
+ */
+export async function isStateSlug(slug: string): Promise<boolean> {
+  await ensureCaches()
+  return locationMap!.get(slug)?.kind === 'state'
+}
+
+/** Companion to `isStateSlug` for the city level. Mirrors exactly what the old
+ * `city-hub` branch checked: a real state slug, and a slug that is a metro or a
+ * city. Whether that city actually sits in that state is settled by `getCityHub`,
+ * as it always was. */
+export async function isCitySlug(stateSlug: string, citySlug: string): Promise<boolean> {
+  await ensureCaches()
+  const lm = locationMap!
+  if (lm.get(stateSlug)?.kind !== 'state') return false
+  const kind = lm.get(citySlug)?.kind
+  return kind === 'metro' || kind === 'city'
+}
+
+export type LocationPrerenderParams = {
+  stateSlugs: string[]
+  topCities: Array<{ citySlug: string; stateSlug: string }>
+}
+
+/**
+ * The state and city slug lists used by generateStaticParams.
+ *
+ * Lives here rather than in the page files because two separate routes need the
+ * exact same lists -- `/clinics/[state]` and `/clinics/[state]/[city]` -- and the
+ * city ranking below is subtle enough that a second copy would drift. Both call
+ * this; nobody re-implements it.
+ */
+export async function getLocationPrerenderParams(): Promise<LocationPrerenderParams> {
   const payload = await getPayloadInstance()
   const pool = (payload.db as any).pool
-  const [svcRes, brandRes, locRes, activeCitiesRes] = await Promise.all([
-    payload.find({ collection: 'services', limit: 500, depth: 0 }),
-    payload.find({ collection: 'brands', limit: 500, depth: 0 }),
+  const [locRes, activeCitiesRes] = await Promise.all([
     /**
      * Raw SQL and unbounded, for the same reason `ensureCaches` above is: this
      * was `payload.find({ collection: 'locations', limit: 5000 })`, and there
@@ -220,8 +233,6 @@ export async function getAllRoutePaths(): Promise<string[][]> {
     ),
   ])
 
-  const svcSlugs: string[] = svcRes.docs.map((t: any) => t.slug)
-  const brandSlugs: string[] = brandRes.docs.map((b: any) => b.slug)
   const stateSlugs: string[] = []
   const stateCodeToSlug = new Map<string, string>()
   const cityEntries: Array<{ citySlug: string; stateSlug: string; clinicCount: number }> = []
@@ -261,7 +272,6 @@ export async function getAllRoutePaths(): Promise<string[][]> {
 
   const activeCitySlugs = new Set<string>(clinicCountBySlug.keys())
 
-  const paths: string[][] = []
   const activeCityEntries = cityEntries.filter((e) => activeCitySlugs.has(e.citySlug) && e.stateSlug)
   // Already capped (unlike the clinic/provider param lists, which were not).
   // Env-tunable for parity with PRERENDER_CLINIC_LIMIT / PRERENDER_PROVIDER_LIMIT
@@ -276,6 +286,26 @@ export async function getAllRoutePaths(): Promise<string[][]> {
   )
   const topFindCities = rankedCities.slice(0, TOP_FIND_CITIES)
 
+  return {
+    stateSlugs,
+    topCities: topFindCities.map(({ citySlug, stateSlug }) => ({ citySlug, stateSlug })),
+  }
+}
+
+// getAllRoutePaths — used by generateStaticParams.
+// Pre-renders only paths backed by real data; ISR handles the rest on first visit.
+export async function getAllRoutePaths(): Promise<string[][]> {
+  const payload = await getPayloadInstance()
+  const [svcRes, brandRes] = await Promise.all([
+    payload.find({ collection: 'services', limit: 500, depth: 0 }),
+    payload.find({ collection: 'brands', limit: 500, depth: 0 }),
+  ])
+
+  const svcSlugs: string[] = svcRes.docs.map((t: any) => t.slug)
+  const brandSlugs: string[] = brandRes.docs.map((b: any) => b.slug)
+
+  const paths: string[][] = []
+
   // Money pages (service/brand × state/city) are NOT pre-rendered: rendering the
   // full matrix at build time OOMs the build container (1 CPU, limited heap).
   // They serve on-demand via ISR instead — the runtime spike is handled by the
@@ -289,11 +319,10 @@ export async function getAllRoutePaths(): Promise<string[][]> {
   paths.push(['brands'])
   brandSlugs.forEach((b) => paths.push(['brands', b]))
 
-  // ── Find path ──────────────────────────────────────────────────────────────
-  stateSlugs.forEach((s) => paths.push([s]))
-  for (const { citySlug, stateSlug } of topFindCities) {
-    paths.push([stateSlug, citySlug])
-  }
+  // State and city hubs are NOT pushed here any more. They are served by
+  // `app/(frontend)/clinics/[state]/page.tsx` and `.../[city]/page.tsx`, which
+  // have their own generateStaticParams calling getLocationPrerenderParams.
+  // Emitting them here would ask the catch-all to prerender urls that now 404.
 
   return paths
 }

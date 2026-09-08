@@ -58,7 +58,7 @@ async function getStaticLists(payload: any, pool: any): Promise<StaticLists> {
   const locations: { label: string; href: string; sublabel: string }[] = []
   for (const s of statesRes.docs as any[]) {
     if (s.name && s.slug) {
-      locations.push({ label: String(s.name), href: `/${s.slug}`, sublabel: 'State' })
+      locations.push({ label: String(s.name), href: `/clinics/${s.slug}`, sublabel: 'State' })
     }
   }
   // Cities from clinic data so we only suggest places we actually have.

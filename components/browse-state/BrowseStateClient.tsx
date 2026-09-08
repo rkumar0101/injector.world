@@ -37,7 +37,7 @@ function StateCard({
 }) {
   const live = state.isLive
   return (
-    <Link href={`/${state.slug}`} data-id={state.id} style={style} className={className}>
+    <Link href={`/clinics/${state.slug}`} data-id={state.id} style={style} className={className}>
       <div className="flex flex-col flex-1 min-w-0 mr-2">
         <span
           className={`text-body-sm font-medium truncate leading-tight ${live ? 'text-white' : 'text-white/55'}`}

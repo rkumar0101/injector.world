@@ -76,11 +76,11 @@ export function ClinicPathBreadcrumb({
             <span>/</span>
             <Link href="/clinics" className="hover:text-ink-primary transition">Clinics</Link>
             <span>/</span>
-            <Link href={`/${stateSlug}`} className="hover:text-ink-primary transition">
+            <Link href={`/clinics/${stateSlug}`} className="hover:text-ink-primary transition">
               {stateName}
             </Link>
             <span>/</span>
-            <Link href={`/${stateSlug}/${citySlug}`} className="hover:text-ink-primary transition">
+            <Link href={`/clinics/${stateSlug}/${citySlug}`} className="hover:text-ink-primary transition">
               {cityName}
             </Link>
             <span>/</span>

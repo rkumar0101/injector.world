@@ -102,8 +102,13 @@ export function StateHubPage({ data, schema }: Props) {
       {/* Breadcrumb */}
       <div className="bg-surface border-b border-border">
         <div className="max-canvas py-3">
+          {/* The Clinics crumb matches the JSON-LD BreadcrumbList this page
+              renders, and the url it now sits on. Google expects the markup to
+              describe the visible trail, so these two must not drift apart. */}
           <nav className="flex items-center gap-2 text-caption text-ink-tertiary" aria-label="Breadcrumb">
             <Link href="/" className="hover:text-ink-primary transition">Home</Link>
+            <span>/</span>
+            <Link href="/clinics" className="hover:text-ink-primary transition">Clinics</Link>
             <span>/</span>
             <span className="text-ink-primary">{state.name}</span>
           </nav>
@@ -242,7 +247,7 @@ export function StateHubPage({ data, schema }: Props) {
                 {allCities.map((c) => (
                   <Link
                     key={c.slug}
-                    href={`/${state.slug}/${c.slug}`}
+                    href={`/clinics/${state.slug}/${c.slug}`}
                     className="group flex items-center justify-between p-4 rounded-control border border-border bg-surface hover:border-brand-accent hover:bg-surface-warm transition-all"
                   >
                     <div>

@@ -92,7 +92,7 @@ export function CityDirectoryPage({ data, banner, schema }: Props) {
               {stateLocation && (
                 <>
                   <span>/</span>
-                  <Link href={`/${stateLocation.slug}`} className="hover:text-ink-primary transition">{stateLocation.name}</Link>
+                  <Link href={`/clinics/${stateLocation.slug}`} className="hover:text-ink-primary transition">{stateLocation.name}</Link>
                 </>
               )}
               <span>/</span>
@@ -119,7 +119,7 @@ export function CityDirectoryPage({ data, banner, schema }: Props) {
 
   const breadcrumbItems = [
     { href: '/', label: 'Home' },
-    ...(stateLocation ? [{ href: `/${stateLocation.slug}`, label: stateLocation.name }] : []),
+    ...(stateLocation ? [{ href: `/clinics/${stateLocation.slug}`, label: stateLocation.name }] : []),
     ...(stateLocation ? [{ href: `/services/${service.slug}/${stateLocation.slug}`, label: `${service.name} in ${stateLocation.name}` }] : []),
     { label: city.name },
   ]

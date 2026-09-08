@@ -270,7 +270,10 @@ export async function scanPages(
     if (metro && metro.stateSlug) {
       computed({
         pageKey: `city-hub:-:${metro.stateSlug}:${metro.slug}`,
-        path: `/${metro.stateSlug}/${metro.slug}`,
+        // pageKey deliberately unchanged: it carries no path, it is the upsert
+        // key, and renaming it would orphan every existing row rather than
+        // update it. Only `path` moved under /clinics on 2026-09-09.
+        path: `/clinics/${metro.stateSlug}/${metro.slug}`,
         pageType: 'city-hub', stateSlug: metro.stateSlug, citySlug: metro.slug, dataCount: r.n,
       })
     }
@@ -280,7 +283,7 @@ export async function scanPages(
     if (state) {
       computed({
         pageKey: `state-hub:-:${state.slug}:-`,
-        path: `/${state.slug}`,
+        path: `/clinics/${state.slug}`,
         pageType: 'state-hub', stateSlug: state.slug, dataCount: r.n,
       })
     }

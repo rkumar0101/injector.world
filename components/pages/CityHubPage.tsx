@@ -125,12 +125,17 @@ export function CityHubPage({ data, schema }: Props) {
       {/* Breadcrumb */}
       <div className="bg-surface border-b border-border">
         <div className="max-canvas py-3">
+          {/* The Clinics crumb matches the JSON-LD BreadcrumbList this page
+              renders, and the url it now sits on. Google expects the markup to
+              describe the visible trail, so these two must not drift apart. */}
           <nav className="flex items-center gap-2 text-caption text-ink-tertiary flex-wrap" aria-label="Breadcrumb">
             <Link href="/" className="hover:text-ink-primary transition">Home</Link>
             <span>/</span>
+            <Link href="/clinics" className="hover:text-ink-primary transition">Clinics</Link>
+            <span>/</span>
             {stateLocation && (
               <>
-                <Link href={`/${stateLocation.slug}`} className="hover:text-ink-primary transition">{stateLocation.name}</Link>
+                <Link href={`/clinics/${stateLocation.slug}`} className="hover:text-ink-primary transition">{stateLocation.name}</Link>
                 <span>/</span>
               </>
             )}
@@ -310,7 +315,7 @@ export function CityHubPage({ data, schema }: Props) {
                   <div className="font-semibold text-body text-ink-primary">All clinics in {stateLocation.name}</div>
                   <div className="text-body-sm text-ink-secondary mt-0.5">Compare cities and services statewide.</div>
                 </div>
-                <Link href={`/${stateLocation.slug}`} className="flex items-center gap-1.5 text-body-sm text-brand-accent font-medium hover:underline flex-shrink-0">
+                <Link href={`/clinics/${stateLocation.slug}`} className="flex items-center gap-1.5 text-body-sm text-brand-accent font-medium hover:underline flex-shrink-0">
                   Browse {stateLocation.name}
                   <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><polyline points="9 18 15 12 9 6"/></svg>
                 </Link>

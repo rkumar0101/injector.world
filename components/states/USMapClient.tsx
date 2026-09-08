@@ -135,7 +135,7 @@ export function USMapClient({ states }: { states: StateData[] }) {
 
   const handleClick = (abbr: string) => {
     const s = stateMap.get(abbr)
-    if (s) router.push(`/${s.slug}`)
+    if (s) router.push(`/clinics/${s.slug}`)
   }
 
   return (

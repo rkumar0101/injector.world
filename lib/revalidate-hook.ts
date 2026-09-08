@@ -119,8 +119,8 @@ async function pathsFor(collection: string, doc: any, req: any): Promise<string[
       if (!loc) return null
       return [
         `/clinics/${loc.stateSlug}/${loc.citySlug}/${slug}`,
-        `/${loc.stateSlug}/${loc.citySlug}`,
-        `/${loc.stateSlug}`,
+        `/clinics/${loc.stateSlug}/${loc.citySlug}`,
+        `/clinics/${loc.stateSlug}`,
         '/clinics',
         // Homepage surfaces featured / most-reviewed clinics.
         '/',
@@ -145,7 +145,11 @@ async function pathsFor(collection: string, doc: any, req: any): Promise<string[
 
     case 'locations':
       // A location's own hub page, plus the state index and the homepage.
-      return slug ? [`/${slug}`, '/states', '/'] : ['/states', '/']
+      // `/clinics/<slug>` is the state hub. It was `/<slug>` before the paths
+      // consolidated under /clinics on 2026-09-09. This has only ever resolved
+      // for STATE rows: a city hub needs its parent state slug too, which this
+      // doc does not carry, and city rows fall back to their 300s timer.
+      return slug ? [`/clinics/${slug}`, '/states', '/'] : ['/states', '/']
 
     // FAQs render inside other pages (clinic, guide, city hubs) and have no
     // single owning URL. Promotions and reviews likewise fan out across

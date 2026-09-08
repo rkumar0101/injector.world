@@ -24,7 +24,7 @@ export function StateCityCombobox({ stateSlug, stateName, cities }: Props) {
 
   function selectCity(city: StateCityEntry) {
     setIsOpen(false)
-    router.push(`/${stateSlug}/${city.slug}`)
+    router.push(`/clinics/${stateSlug}/${city.slug}`)
   }
 
   function handleKeyDown(e: React.KeyboardEvent<HTMLInputElement>) {

@@ -141,7 +141,7 @@ export function BrandStatePage({ data, schema }: Props) {
               All {brand.name} clinics
               <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><polyline points="9 18 15 12 9 6"/></svg>
             </Link>
-            <Link href={`/${state.slug}`} className="flex items-center gap-1.5 text-body-sm text-brand-accent hover:underline">
+            <Link href={`/clinics/${state.slug}`} className="flex items-center gap-1.5 text-body-sm text-brand-accent hover:underline">
               All clinics in {state.name}
               <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><polyline points="9 18 15 12 9 6"/></svg>
             </Link>

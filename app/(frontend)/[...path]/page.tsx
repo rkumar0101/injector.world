@@ -2,25 +2,17 @@ import type { Metadata } from 'next'
 import { notFound } from 'next/navigation'
 import { resolveRoute, getAllRoutePaths } from '@/lib/route-resolver'
 import {
-  getCityDirectory, getServicePillar, getServiceState,
-  getStateHub, getCityHub, getServicesIndex,
+  getCityDirectory, getServicePillar, getServiceState, getServicesIndex,
 } from '@/lib/location-queries'
 import {
   getBrandsIndex, getBrandPillar, getBrandState, getBrandCityDirectory,
 } from '@/lib/brand-queries'
 import { getActiveBanner } from '@/lib/promotions'
-import { isMarketLive } from '@/lib/markets'
 import { getPageRobots } from '@/lib/page-index/queries'
 import { DEFAULT_OG_IMAGES } from '@/lib/seo-defaults'
-import { Header } from '@/components/header/Header'
-import { Footer } from '@/components/footer/Footer'
-import { ZipPromoBanner } from '@/components/shared/ZipPromoBanner'
-import { ComingSoonMarket } from '@/components/shared/ComingSoonMarket'
 import { CityDirectoryPage } from '@/components/pages/CityDirectoryPage'
 import { ServicePillarPage } from '@/components/pages/ServicePillarPage'
 import { ServiceStatePage } from '@/components/pages/ServiceStatePage'
-import { StateHubPage } from '@/components/pages/StateHubPage'
-import { CityHubPage } from '@/components/pages/CityHubPage'
 import { ServicesIndexPage } from '@/components/pages/ServicesIndexPage'
 import { BrandsIndexPage } from '@/components/pages/BrandsIndexPage'
 import { BrandPillarPage } from '@/components/pages/BrandPillarPage'
@@ -123,33 +115,6 @@ export async function generateMetadata({
       alternates: { canonical },
       openGraph: { title, description: desc, url: canonical, images: DEFAULT_OG_IMAGES },
       ...(await getPageRobots(`/services/${resolved.serviceSlug}/${resolved.stateSlug}/${resolved.citySlug}`)),
-    }
-  }
-
-  if (resolved.type === 'state-hub') {
-    const data = await getStateHub(resolved.stateSlug)
-    if (!data) return {}
-    const title = `Verified Injectors in ${data.state.name}`
-    const desc = `Browse license-verified Botox and aesthetic injectors across ${data.state.name}. Real patient reviews.`
-    return {
-      title: { absolute: `${title} | injector.world` },
-      description: desc,
-      alternates: { canonical: `${siteUrl}/${resolved.stateSlug}` },
-      ...(await getPageRobots(`/${resolved.stateSlug}`)),
-    }
-  }
-
-  if (resolved.type === 'city-hub') {
-    const data = await getCityHub(resolved.stateSlug, resolved.citySlug)
-    if (!data) return {}
-    const cityDisplay = data.city.name.replace(/\s+city$/i, '')
-    const title = `Aesthetic Injectors in ${cityDisplay}, ${data.city.stateCode}`
-    const desc = `Browse ${data.services.length} services and verified aesthetic providers in ${cityDisplay}. Choose a service to see license-checked injectors near you.`
-    return {
-      title: { absolute: `${title} | injector.world` },
-      description: desc,
-      alternates: { canonical: `${siteUrl}/${resolved.stateSlug}/${resolved.citySlug}` },
-      ...(await getPageRobots(`/${resolved.stateSlug}/${resolved.citySlug}`)),
     }
   }
 
@@ -336,101 +301,6 @@ export default async function CatchAllPage({
         banner={banner}
         schema={[breadcrumbSchema, ...(clinicListSchema ? [clinicListSchema] : []), ...(faqSchema ? [faqSchema] : [])]}
       />
-    )
-  }
-
-  // ── State hub (1.6) ────────────────────────────────────────────────────────
-  if (resolved.type === 'state-hub') {
-    const data = await getStateHub(resolved.stateSlug)
-    if (!data) notFound()
-
-    if (!isMarketLive(data.state)) {
-      return (
-        <>
-          <Header />
-          <ComingSoonMarket
-            overline="Coming soon"
-            title={`Aesthetic clinics in ${data.state.name}`}
-            placeName={data.state.name}
-            stateCode={data.state.stateCode}
-            links={[
-              { href: '/clinics', label: 'Browse all verified clinics' },
-              { href: '/guides', label: 'Treatment guides' },
-            ]}
-          />
-          <Footer />
-        </>
-      )
-    }
-
-    const banner = await getActiveBanner('state', undefined, data.state.id)
-
-    const schema = [{
-      '@context': 'https://schema.org', '@type': 'BreadcrumbList',
-      itemListElement: [
-        { '@type': 'ListItem', position: 1, name: 'Home', item: siteUrl },
-        { '@type': 'ListItem', position: 2, name: data.state.name },
-      ],
-    }, ...(data.faqs.length > 0 ? [{
-      '@context': 'https://schema.org', '@type': 'FAQPage',
-      mainEntity: data.faqs.map((f) => ({
-        '@type': 'Question', name: f.question,
-        acceptedAnswer: { '@type': 'Answer', text: f.detail ? `${f.answer} ${f.detail}` : f.answer },
-      })),
-    }] : [])]
-
-    return (
-      <>
-        <Header />
-        <ZipPromoBanner fallback={banner} />
-        <StateHubPage data={data} schema={schema} />
-        <Footer />
-      </>
-    )
-  }
-
-  // ── City hub (1.7) ─────────────────────────────────────────────────────────
-  if (resolved.type === 'city-hub') {
-    const data = await getCityHub(resolved.stateSlug, resolved.citySlug)
-    if (!data) notFound()
-
-    if (!isMarketLive(data.city)) {
-      const cityDisplay = data.city.name.replace(/\s+city$/i, '')
-      return (
-        <>
-          <Header />
-          <ComingSoonMarket
-            overline="Coming soon"
-            title={`Aesthetic injectors in ${cityDisplay}, ${data.city.stateCode}`}
-            placeName={cityDisplay}
-            cityTag={cityDisplay}
-            stateCode={data.city.stateCode}
-            links={[
-              ...(data.stateLocation ? [{ href: `/${data.stateLocation.slug}`, label: `All of ${data.stateLocation.name}` }] : []),
-              { href: '/clinics', label: 'Browse all verified clinics' },
-              { href: '/guides', label: 'Treatment guides' },
-            ]}
-          />
-          <Footer />
-        </>
-      )
-    }
-
-    const schema = [{
-      '@context': 'https://schema.org', '@type': 'BreadcrumbList',
-      itemListElement: [
-        { '@type': 'ListItem', position: 1, name: 'Home', item: siteUrl },
-        ...(data.stateLocation ? [{ '@type': 'ListItem', position: 2, name: data.stateLocation.name, item: `${siteUrl}/${data.stateLocation.slug}` }] : []),
-        { '@type': 'ListItem', position: data.stateLocation ? 3 : 2, name: data.city.name },
-      ],
-    }]
-
-    return (
-      <>
-        <Header />
-        <CityHubPage data={data} schema={schema} />
-        <Footer />
-      </>
     )
   }
 

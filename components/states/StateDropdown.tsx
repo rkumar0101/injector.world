@@ -95,7 +95,7 @@ export function StateDropdown({ states }: { states: StateOption[] }) {
           filtered.map((s) => (
             <Link
               key={s.slug}
-              href={`/${s.slug}`}
+              href={`/clinics/${s.slug}`}
               tabIndex={open ? undefined : -1}
               onClick={() => setOpen(false)}
               className="flex items-center justify-between gap-3 px-4 py-2 text-body-sm text-ink-secondary transition hover:bg-surface hover:text-brand-accent"
