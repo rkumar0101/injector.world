@@ -1650,8 +1650,17 @@ export interface Claim {
   requestedState?: string | null;
   claimantName: string;
   claimantEmail: string;
+  /**
+   * The clinic's public phone number.
+   */
   claimantPhone?: string | null;
+  /**
+   * Claimant's direct mobile number.
+   */
   directPhone?: string | null;
+  /**
+   * Claimant's direct email address.
+   */
   directEmail?: string | null;
   /**
    * True once the claimant confirmed the code we emailed. If false, they never proved they own this inbox — verify manually before approving.
