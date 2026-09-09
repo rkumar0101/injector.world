@@ -29,17 +29,30 @@ const DEFAULT_CENTER: [number, number] = [40.7128, -74.006]
  * lists are maintained from search-volume data, so they are kept apart.
  * Clicking a chip fills the search field; the visitor can then adjust the
  * location and hit Search.
+ *
+ * HARD CONSTRAINT: every string below must match a `brands.name` /
+ * `services.name` row EXACTLY (case-insensitively). A chip carries no slug and
+ * no link. pickPopular just types the string into the search box, and the
+ * parser resolves it via buildServiceLookup/buildBrandLookup, which register
+ * only the row's name, its slug, and its slug-with-spaces. Anything else falls
+ * through to a clinic-NAME search and quietly returns nothing.
+ *
+ * Audited 2026-09-10 against staging (59 services, 29 brands). Before that,
+ * 9 of these 28 chips were dead and one ("Facial Filler") silently resolved to
+ * the unrelated "Facial" service, because the lists were written by hand from
+ * search-volume data and never checked against the catalog. Re-run that check
+ * after any catalog import before adding a chip.
  */
 const TRENDING_BRANDS = [
   'Botox', 'Sculptra', 'Dysport', 'Kybella', 'Juvederm', 'Latisse',
-  'Xeomin', 'Daxxify', 'Radiesse', 'Restylane', 'Belotero', 'Revanesse',
+  'Xeomin', 'Daxxify', 'Radiesse', 'Restylane', 'Belotero', 'Jeuveau',
 ]
 
 const TRENDING_SERVICES = [
-  'Lip Filler', 'Lip Flip', 'Nasolabial Folds', 'Crows Feet', 'Tech-Neck',
-  'Fine-Line', 'Marionette Lines', 'Cheek Filler', 'Chin Filler', 'Nefertiti Lift',
-  'Facial Filler', 'Lip Shaping', 'Tear Trough', 'Frown Lines', 'Nose Filler',
-  'Eyebrow Filler',
+  'Lip Filler', 'Dermal Filler', 'Laser Treatments', "Crow's Feet", 'Frown Lines',
+  'Forehead Lines', 'Neck Bands', 'Chemical Peel', 'Cheek Filler', 'Lower Face Filler',
+  'Chin Filler', 'Temple Filler', 'Microneedling', 'Under Eye Filler', 'Jawline Filler',
+  'Lip Flip',
 ]
 
 /**
@@ -563,7 +576,7 @@ export function HeroSearch() {
       <div className="mt-5 space-y-2.5">
         {[
           { label: 'Trending brands', items: TRENDING_BRANDS },
-          { label: 'Trending treatments', items: TRENDING_SERVICES },
+          { label: 'Trending services', items: TRENDING_SERVICES },
         ].map(({ label, items }) => (
           <TrendingRow key={label} label={label} items={items} onPick={pickPopular} />
         ))}

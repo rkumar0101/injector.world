@@ -147,7 +147,18 @@ export function commaOrSemiListOfObj(v: string | undefined, key: string): Array<
 
 /** Title-case a string: "lip filler" → "Lip Filler". */
 export function titleCase(s: string): string {
-  return s.replace(/\b\w/g, (c) => c.toUpperCase())
+  return (
+    s
+      .replace(/\b\w/g, (c) => c.toUpperCase())
+      // \b treats an apostrophe as a word boundary, so the naive pass above turned
+      // "crow's feet" into "Crow'S Feet". That is exactly what reached the DB and
+      // the public /services page (service #11, found 2026-09-10). A LONE letter
+      // after an apostrophe is a possessive or contraction and stays lowercase.
+      // Two or more letters is a real name ("O'Fallon", "D'Angelo") and keeps its
+      // capital, which matters because import-data.ts also title-cases ALL-CAPS
+      // city names through here.
+      .replace(/'([A-Za-z])(?![A-Za-z])/g, (_m, c: string) => `'${c.toLowerCase()}`)
+  )
 }
 
 /**
