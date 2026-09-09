@@ -3,6 +3,7 @@ import { Header } from '@/components/header/Header'
 import { Footer } from '@/components/footer/Footer'
 import { BrandDirectoryListing } from '@/components/shared/BrandDirectoryListing'
 import { CountPill } from '@/components/shared/CountPill'
+import { LocationPicker } from '@/components/shared/LocationPicker'
 import { FaqAccordionItem } from '@/components/shared/FaqAccordionItem'
 import type { BrandStateData } from '@/lib/brand-queries'
 
@@ -35,36 +36,33 @@ export function BrandStatePage({ data, schema }: Props) {
       </div>
 
       {/* Hero */}
-      <section className="bg-surface-canvas pt-10 pb-8 border-b border-border">
-        <div className="max-canvas">
-          <span className="text-overline uppercase tracking-widest font-semibold text-brand-accent mb-3 block">
-            {brand.name} Directory
-          </span>
+      {/* Matched to the pillar hero 2026-09-10: same cream band, same widths,
+          no overline, tagline under the h1. The inline 8-city chip row that sat
+          here came out in the same pass; it was an unlabelled subset of the full
+          city grid a few hundred pixels below. The picker replaces it and lists
+          every city, with its links always in the served HTML. */}
+      <section className="bg-surface-warm border-b border-border pb-8 pt-8 md:pb-10 md:pt-10">
+        <div className="max-canvas max-w-4xl">
           <h1 className="font-serif text-h1-m md:text-h1 font-medium leading-tight tracking-tight text-ink-primary mb-3">
-            {brand.name} in {state.name}
+            {brand.name} Injectors in {state.name}
           </h1>
+          {brand.tagline && (
+            <p className="font-serif text-lede-m md:text-lede text-ink-secondary">{brand.tagline}</p>
+          )}
           {/* Sentence after the pill dropped 2026-08-07 (client request), and
               "verified" came out of the pill label with it. */}
           {totalClinics > 0 && (
-            <p className="flex flex-wrap items-center gap-2">
+            <div className="mt-5 flex flex-wrap gap-3">
               <CountPill count={totalClinics} label="clinics" />
-            </p>
+            </div>
           )}
 
-          {/* City quick-links */}
           {cities.length > 0 && (
-            <div className="flex flex-wrap gap-2 mt-5">
-              <span className="text-caption text-ink-tertiary uppercase tracking-wider font-semibold self-center">Browse by city:</span>
-              {cities.slice(0, 8).map((c) => (
-                <Link
-                  key={c.slug}
-                  href={`/brands/${brand.slug}/${state.slug}/${c.slug}`}
-                  className="px-3 py-1.5 rounded-control border border-border text-body-sm text-ink-secondary hover:border-brand-accent hover:text-brand-accent transition"
-                >
-                  {c.name}
-                </Link>
-              ))}
-            </div>
+            <LocationPicker
+              states={cities.map((c) => ({ code: c.slug, name: c.name, slug: c.slug }))}
+              basePath={`/brands/${brand.slug}/${state.slug}`}
+              label="Select a city"
+            />
           )}
         </div>
       </section>
@@ -90,7 +88,7 @@ export function BrandStatePage({ data, schema }: Props) {
             />
           </div>
 
-          {/* Browse by city: full grid */}
+          {/* City grid: every city, with per-city clinic counts */}
           {cities.length > 0 && (
             <div>
               <h2 className="font-serif text-h2 text-ink-primary mb-6">{brand.name} by city in {state.name}</h2>
@@ -135,12 +133,11 @@ export function BrandStatePage({ data, schema }: Props) {
             </div>
           )}
 
-          {/* Internal links */}
+          {/* Internal links. The "All {brand} clinics" link came out 2026-09-10:
+              the breadcrumb at the top already goes there. The clinics-tree link
+              stays (founder call, same day); it is the only link on this page
+              from the brand tree into /clinics. */}
           <div className="flex flex-wrap gap-3">
-            <Link href={`/brands/${brand.slug}`} className="flex items-center gap-1.5 text-body-sm text-brand-accent hover:underline">
-              All {brand.name} clinics
-              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><polyline points="9 18 15 12 9 6"/></svg>
-            </Link>
             <Link href={`/clinics/${state.slug}`} className="flex items-center gap-1.5 text-body-sm text-brand-accent hover:underline">
               All clinics in {state.name}
               <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><polyline points="9 18 15 12 9 6"/></svg>

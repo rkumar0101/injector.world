@@ -12,11 +12,19 @@ type Props = {
    * is a client component and server pages cannot pass functions across the
    * RSC boundary. Final URL: `${basePath}/${state.slug}`. */
   basePath: string
+  /** Placeholder on the closed trigger. Defaults to "Select a state"; the brand
+   *  state page passes "Select a city", because one level down the same control
+   *  lists cities. The `states` prop is really "whatever the next level down
+   *  is": `code` is only used as a React key. */
+  label?: string
 }
 
 /**
- * State picker in the brand and service pillar heroes. Pick a state, land on
- * that brand's or service's page for it.
+ * Location picker, used at two levels. In the brand and service pillar heroes it
+ * lists states: pick one, land on that brand's or service's page for it. In the
+ * brand state hero it lists that state's cities, with `label="Select a city"`
+ * and a `basePath` that already carries the state, so the same
+ * `${basePath}/${slug}` produces the city url.
  *
  * Rebuilt 2026-08-07 (client request). It used to be a full-width panel: 50
  * state pill buttons followed by a city search box, which ate most of a screen.
@@ -35,13 +43,18 @@ type Props = {
  *    dropdown instead of navigating. So a crawler could follow the href but a
  *    human could not: clicking a state went nowhere.
  *
- * The city dropdown is gone (founder call, 2026-09-08). Once the state link
- * navigates there is nothing left to populate a city menu with, and a control
- * that can never leave its "Pick a state first" disabled state is worse than no
- * control. The city step still exists and is one click further on: every state
- * page lists its own cities as plain anchors.
+ * There used to be a SECOND, dependent dropdown beside this one, listing the
+ * cities of whichever state you had selected. It was removed 2026-09-08
+ * (founder call): once the state link navigates, nothing sets the selected
+ * state, so that control could never leave its "Pick a state first" disabled
+ * state, and a permanently dead control is worse than none.
+ *
+ * The city step came back on 2026-09-10 as a second, INDEPENDENT instance of
+ * this same component in the brand state hero, which is a different thing: it
+ * depends on nothing, because the state is already in its basePath. Do not
+ * reintroduce the dependent version.
  */
-export function LocationPicker({ states, basePath }: Props) {
+export function LocationPicker({ states, basePath, label }: Props) {
   const [open, setOpen] = useState(false)
   const containerRef = useRef<HTMLDivElement>(null)
 
@@ -80,7 +93,7 @@ export function LocationPicker({ states, basePath }: Props) {
         aria-expanded={open}
         className={triggerCls}
       >
-        <span className="text-ink-tertiary">Select a state</span>
+        <span className="text-ink-tertiary">{label ?? 'Select a state'}</span>
         <Chevron open={open} />
       </button>
 

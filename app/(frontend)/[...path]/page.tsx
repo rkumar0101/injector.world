@@ -268,12 +268,17 @@ export default async function CatchAllPage({
     const breadcrumbSchema = {
       '@context': 'https://schema.org', '@type': 'BreadcrumbList',
       itemListElement: [
+        // Home / Services / <service> / <state> / <city>. Kept identical to the
+        // visible trail in CityDirectoryPage and to the brand city page's shape.
+        // Until 2026-09-10 this described a different trail from the one on the
+        // page, which is exactly what structured data must not do.
         { '@type': 'ListItem', position: 1, name: 'Home', item: siteUrl },
+        { '@type': 'ListItem', position: 2, name: 'Services', item: `${siteUrl}/services` },
+        { '@type': 'ListItem', position: 3, name: data.service.name, item: `${siteUrl}/services/${resolved.serviceSlug}` },
         ...(data.stateLocation ? [
-          { '@type': 'ListItem', position: 2, name: data.service.name, item: `${siteUrl}/services/${resolved.serviceSlug}` },
-          { '@type': 'ListItem', position: 3, name: `${data.service.name} in ${data.stateLocation.name}`, item: `${siteUrl}/services/${resolved.serviceSlug}/${data.stateLocation.slug}` },
+          { '@type': 'ListItem', position: 4, name: data.stateLocation.name, item: `${siteUrl}/services/${resolved.serviceSlug}/${data.stateLocation.slug}` },
         ] : []),
-        { '@type': 'ListItem', position: data.stateLocation ? 4 : 2, name: data.city.name },
+        { '@type': 'ListItem', position: data.stateLocation ? 5 : 4, name: data.city.name },
       ],
     }
 
@@ -338,9 +343,12 @@ export default async function CatchAllPage({
     const schema = [{
       '@context': 'https://schema.org', '@type': 'BreadcrumbList',
       itemListElement: [
+        // Home / Services / <service> / <state>, matching the visible trail in
+        // ServiceStatePage and the brand state page's shape.
         { '@type': 'ListItem', position: 1, name: 'Home', item: siteUrl },
-        { '@type': 'ListItem', position: 2, name: data.service.name, item: `${siteUrl}/services/${resolved.serviceSlug}` },
-        { '@type': 'ListItem', position: 3, name: data.state.name },
+        { '@type': 'ListItem', position: 2, name: 'Services', item: `${siteUrl}/services` },
+        { '@type': 'ListItem', position: 3, name: data.service.name, item: `${siteUrl}/services/${resolved.serviceSlug}` },
+        { '@type': 'ListItem', position: 4, name: data.state.name },
       ],
     }, {
       '@context': 'https://schema.org', '@type': 'ItemList',

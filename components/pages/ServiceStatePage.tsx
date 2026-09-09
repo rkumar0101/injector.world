@@ -5,6 +5,7 @@ import { ZipPromoBanner } from '@/components/shared/ZipPromoBanner'
 import { ComingSoonMarket } from '@/components/shared/ComingSoonMarket'
 import { ServiceDirectory } from '@/components/pages/ServiceDirectory'
 import { CountPill } from '@/components/shared/CountPill'
+import { LocationPicker } from '@/components/shared/LocationPicker'
 import { FaqAccordionItem } from '@/components/shared/FaqAccordionItem'
 import { isMarketLive } from '@/lib/markets'
 import type { ServiceStateData } from '@/lib/location-queries'
@@ -22,8 +23,12 @@ export function ServiceStatePage({ data, banner, schema }: Props) {
         <Header />
         <div className="bg-surface border-b border-border">
           <div className="max-canvas py-3">
+            {/* Same trail as the live version below. These two blocks are
+                near-duplicates and drift if either is edited alone. */}
             <nav className="flex items-center gap-2 text-caption text-ink-tertiary flex-wrap" aria-label="Breadcrumb">
               <Link href="/" className="hover:text-ink-primary transition">Home</Link>
+              <span>/</span>
+              <Link href="/services" className="hover:text-ink-primary transition">Services</Link>
               <span>/</span>
               <Link href={`/services/${service.slug}`} className="hover:text-ink-primary transition">{service.name}</Link>
               <span>/</span>
@@ -61,8 +66,14 @@ export function ServiceStatePage({ data, banner, schema }: Props) {
       {/* Breadcrumb */}
       <div className="bg-surface border-b border-border">
         <div className="max-canvas py-3">
+          {/* Home / Services / <service> / <state>, matching the brand state
+              page and the JSON-LD BreadcrumbList this page renders. The
+              "Services" crumb was missing until 2026-09-10, so there was no way
+              up to the index from here. */}
           <nav className="flex items-center gap-2 text-caption text-ink-tertiary flex-wrap" aria-label="Breadcrumb">
             <Link href="/" className="hover:text-ink-primary transition">Home</Link>
+            <span>/</span>
+            <Link href="/services" className="hover:text-ink-primary transition">Services</Link>
             <span>/</span>
             <Link href={`/services/${service.slug}`} className="hover:text-ink-primary transition">{service.name}</Link>
             <span>/</span>
@@ -72,21 +83,39 @@ export function ServiceStatePage({ data, banner, schema }: Props) {
       </div>
 
       {/* Hero */}
-      <section className="bg-surface-canvas pt-10 pb-8 border-b border-border">
-        <div className="max-canvas">
-          <span className="text-overline uppercase tracking-widest font-semibold text-brand-accent mb-3 block">
-            {service.name} Directory
-          </span>
+      {/* Matched to the pillar hero 2026-09-10: same cream band, same widths,
+          no overline, tagline under the h1. The pill label lost the service
+          name in the same pass; the h1 above already says it. The city picker
+          lists every city and its links are always in the served HTML, so it
+          adds a jump-to control without taking anything away from the city grid
+          below.
+
+          All six brand and service heroes carry `border-b border-border`
+          (founder call, same day). The service pillar was the odd one out
+          without it. */}
+      <section className="bg-surface-warm border-b border-border pb-8 pt-8 md:pb-10 md:pt-10">
+        <div className="max-canvas max-w-4xl">
           <h1 className="font-serif text-h1-m md:text-h1 font-medium leading-tight tracking-tight text-ink-primary mb-3">
-            {service.name} in {state.name}
+            {service.name} Injectors in {state.name}
           </h1>
+          {service.tagline && (
+            <p className="font-serif text-lede-m md:text-lede text-ink-secondary">{service.tagline}</p>
+          )}
           {/* Sentence after the pill dropped 2026-08-07 (client request), and
               "verified" came out of the pill label with it, matching the
               service city page. */}
           {totalClinics > 0 && (
-            <p className="flex flex-wrap items-center gap-2">
-              <CountPill count={totalClinics} label={`${service.name} clinic${totalClinics !== 1 ? 's' : ''}`} />
-            </p>
+            <div className="mt-5 flex flex-wrap gap-3">
+              <CountPill count={totalClinics} label="clinics" />
+            </div>
+          )}
+
+          {cities.length > 0 && (
+            <LocationPicker
+              states={cities.map((c) => ({ code: c.slug, name: c.name, slug: c.slug }))}
+              basePath={`/services/${service.slug}/${state.slug}`}
+              label="Select a city"
+            />
           )}
         </div>
       </section>
@@ -156,12 +185,11 @@ export function ServiceStatePage({ data, banner, schema }: Props) {
             </div>
           )}
 
-          {/* Internal links */}
+          {/* Internal links. The "All {service} clinics" link came out
+              2026-09-10: the breadcrumb at the top already goes there. The
+              clinics-tree link stays (founder call, same day); it is the only
+              link on this page from the service tree into /clinics. */}
           <div className="flex flex-wrap gap-3">
-            <Link href={`/services/${service.slug}`} className="flex items-center gap-1.5 text-body-sm text-brand-accent hover:underline">
-              All {service.name} clinics
-              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><polyline points="9 18 15 12 9 6"/></svg>
-            </Link>
             <Link href={`/clinics/${state.slug}`} className="flex items-center gap-1.5 text-body-sm text-brand-accent hover:underline">
               All clinics in {state.name}
               <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><polyline points="9 18 15 12 9 6"/></svg>

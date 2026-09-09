@@ -29,15 +29,16 @@ export function ServicesIndexPage({ services, schema }: Props) {
       </div>
 
       {/* Hero */}
-      <section className="bg-surface-warm pt-12 pb-10 md:pt-16 md:pb-12">
+      {/* Matched to the brand and service page heroes 2026-09-10: same cream
+          band, same padding, same bottom border, no overline. This page and
+          /brands were the last two on the two paths still using their own
+          larger hero. */}
+      <section className="bg-surface-warm border-b border-border pb-8 pt-8 md:pb-10 md:pt-10">
         <div className="max-canvas max-w-4xl">
-          <span className="text-overline uppercase tracking-widest font-semibold text-brand-accent mb-4 block">
-            All services
-          </span>
-          <h1 className="font-serif text-h1-m md:text-h1 font-medium leading-tight tracking-tight text-ink-primary mb-4">
+          <h1 className="font-serif text-h1-m md:text-h1 font-medium leading-tight tracking-tight text-ink-primary mb-3">
             Browse aesthetic services
           </h1>
-          <p className="font-serif text-lede-m md:text-lede text-ink-secondary max-w-2xl">
+          <p className="font-serif text-lede-m md:text-lede text-ink-secondary">
             Every service we cover, from neurotoxins to fillers and skin therapies. Pick a service to find verified, license-checked injectors near you.
           </p>
         </div>

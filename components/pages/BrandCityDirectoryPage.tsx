@@ -42,21 +42,24 @@ export function BrandCityDirectoryPage({ data, schema }: Props) {
       </div>
 
       {/* Hero */}
-      <section className="bg-surface-canvas pt-10 pb-8 border-b border-border">
-        <div className="max-canvas">
-          <span className="text-overline uppercase tracking-widest font-semibold text-brand-accent mb-3 block">
-            {brand.name} in {cityDisplay}
-          </span>
+      {/* Matched to the pillar hero 2026-09-10: same cream band, same widths, no
+          overline, tagline under the h1. No picker here, this is the bottom of
+          the brand tree and there is no next level to pick. */}
+      <section className="bg-surface-warm border-b border-border pb-8 pt-8 md:pb-10 md:pt-10">
+        <div className="max-canvas max-w-4xl">
           <h1 className="font-serif text-h1-m md:text-h1 font-medium leading-tight tracking-tight text-ink-primary mb-3">
             {brand.name} Clinics in {cityDisplay}, {city.stateCode}
           </h1>
+          {brand.tagline && (
+            <p className="font-serif text-lede-m md:text-lede text-ink-secondary">{brand.tagline}</p>
+          )}
           {/* Dropped 2026-08-07 (client request): the sentence after the pill,
               the word "verified" in the pill, and the "Also browse:" service
               chips. The page is the pill, the listing and its filters. */}
           {totalClinics > 0 && (
-            <p className="flex flex-wrap items-center gap-2">
+            <div className="mt-5 flex flex-wrap gap-3">
               <CountPill count={totalClinics} label="clinics" />
-            </p>
+            </div>
           )}
         </div>
       </section>

@@ -48,7 +48,7 @@ export function ServicePillarPage({ data, banner, schema }: Props) {
           overline, short description, average cost, Worth-It badge, service
           indices and body-area chips all came out. The city dropdown that sat
           beside the state one was removed 2026-09-08. */}
-      <section className="bg-surface-warm pb-8 pt-8 md:pb-10 md:pt-10">
+      <section className="bg-surface-warm border-b border-border pb-8 pt-8 md:pb-10 md:pt-10">
         <div className="max-canvas max-w-4xl">
           <h1 className="font-serif text-h1-m md:text-h1 font-medium leading-tight tracking-tight text-ink-primary mb-3">
             {service.name} Injectors

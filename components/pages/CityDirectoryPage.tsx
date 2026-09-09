@@ -87,12 +87,19 @@ export function CityDirectoryPage({ data, banner, schema }: Props) {
         <Header />
         <div className="bg-surface border-b border-border">
           <div className="max-canvas py-3">
+            {/* Same trail as the live version below, which is the point: this
+                block used to jump into the clinics tree while the live one did
+                something else again. */}
             <nav className="flex items-center gap-2 text-caption text-ink-tertiary flex-wrap" aria-label="Breadcrumb">
               <Link href="/" className="hover:text-ink-primary transition">Home</Link>
+              <span>/</span>
+              <Link href="/services" className="hover:text-ink-primary transition">Services</Link>
+              <span>/</span>
+              <Link href={`/services/${service.slug}`} className="hover:text-ink-primary transition">{service.name}</Link>
               {stateLocation && (
                 <>
                   <span>/</span>
-                  <Link href={`/clinics/${stateLocation.slug}`} className="hover:text-ink-primary transition">{stateLocation.name}</Link>
+                  <Link href={`/services/${service.slug}/${stateLocation.slug}`} className="hover:text-ink-primary transition">{stateLocation.name}</Link>
                 </>
               )}
               <span>/</span>
@@ -117,10 +124,26 @@ export function CityDirectoryPage({ data, banner, schema }: Props) {
     )
   }
 
+  /**
+   * Home / Services / <service> / <state> / <city>, matching the brand city
+   * page and the JSON-LD BreadcrumbList this page renders.
+   *
+   * Rebuilt 2026-09-10. It used to read Home / <state> / "<service> in <state>"
+   * / <city>, which had three problems: the state crumb jumped into the clinics
+   * tree and the next crumb jumped back into services, so it crossed trees
+   * mid-trail; there was no Services or <service> crumb, so the pillar was
+   * unreachable from here; and it disagreed with this page's own JSON-LD, which
+   * described a different trail entirely.
+   *
+   * The `/clinics/<state>` link this used to carry is gone with it. That is
+   * deliberate and matches the brand city page, which has never had one. The
+   * clinics tree is still linked from the service STATE page, one level up.
+   */
   const breadcrumbItems = [
     { href: '/', label: 'Home' },
-    ...(stateLocation ? [{ href: `/clinics/${stateLocation.slug}`, label: stateLocation.name }] : []),
-    ...(stateLocation ? [{ href: `/services/${service.slug}/${stateLocation.slug}`, label: `${service.name} in ${stateLocation.name}` }] : []),
+    { href: '/services', label: 'Services' },
+    { href: `/services/${service.slug}`, label: service.name },
+    ...(stateLocation ? [{ href: `/services/${service.slug}/${stateLocation.slug}`, label: stateLocation.name }] : []),
     { label: city.name },
   ]
 
@@ -153,21 +176,31 @@ export function CityDirectoryPage({ data, banner, schema }: Props) {
       </div>
 
       {/* Hero */}
-      <section className="bg-surface-canvas pt-10 pb-8 border-b border-border">
-        <div className="max-canvas">
-          <span className="text-overline uppercase tracking-widest font-semibold text-brand-accent mb-3 block">
-            {service.name} Directory
-          </span>
+      {/* Matched to the pillar hero 2026-09-10: same cream band, same widths,
+          no overline, tagline under the h1, and the pill label lost the service
+          name because the h1 above already says it. No picker here, this is the
+          bottom of the service tree and there is no next level to pick.
+
+          All six brand and service heroes carry `border-b border-border`
+          (founder call, same day). */}
+      <section className="bg-surface-warm border-b border-border pb-8 pt-8 md:pb-10 md:pt-10">
+        <div className="max-canvas max-w-4xl">
           <h1 className="font-serif text-h1-m md:text-h1 font-medium leading-tight tracking-tight text-ink-primary mb-3">
-            {service.name} in {cityDisplayName}, {stateCode}
+            {/* "Clinics" added 2026-09-10 so this matches the brand city page,
+                which reads "Botox Clinics in Birmingham, AL". The two city h1s
+                were the last shape difference between the paths. */}
+            {service.name} Clinics in {cityDisplayName}, {stateCode}
           </h1>
+          {service.tagline && (
+            <p className="font-serif text-lede-m md:text-lede text-ink-secondary">{service.tagline}</p>
+          )}
           {/* Dropped 2026-08-07 (client request): the sentence after the pill,
               the word "verified" in the pill, and the two check-mark trust
               lines under it. */}
           {totalClinics > 0 && (
-            <p className="flex flex-wrap items-center gap-2">
-              <CountPill count={totalClinics} label={`${service.name} clinic${totalClinics !== 1 ? 's' : ''}`} />
-            </p>
+            <div className="mt-5 flex flex-wrap gap-3">
+              <CountPill count={totalClinics} label="clinics" />
+            </div>
           )}
         </div>
       </section>
