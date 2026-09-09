@@ -4,7 +4,7 @@ import { useState, useMemo, useEffect, useRef } from 'react'
 import Link from 'next/link'
 import { DirectoryClinicCard } from '@/components/shared/DirectoryClinicCard'
 import { ListingFilters } from '@/components/shared/ListingFilters'
-import { StateCityCombobox } from '@/components/shared/StateCityCombobox'
+import { LocationPicker } from '@/components/shared/LocationPicker'
 import {
   DEFAULT_LISTING_FILTERS,
   applyListingFilters,
@@ -115,69 +115,31 @@ export function StateHubPage({ data, schema }: Props) {
         </div>
       </div>
 
-      {/* Hero */}
-      <section className="bg-surface-canvas pt-10 pb-8 border-b border-border">
-        <div className="max-canvas">
+      {/* Hero. Navy on purpose: the clinics path keeps its always-dark band
+          (Footer pattern) while borrowing the brand/service hero proportions. */}
+      <section className="bg-[#0B1B34] text-white pb-8 pt-8 md:pb-10 md:pt-10">
+        <div className="max-canvas max-w-4xl">
           <span className="text-overline uppercase tracking-widest font-semibold text-brand-accent mb-3 block">
             Clinic Directory
           </span>
-          <h1 className="font-serif text-h1-m md:text-h1 font-medium leading-tight tracking-tight text-ink-primary mb-3">
-            Find a verified clinic in {state.name}
+          <h1 className="font-serif text-h1-m md:text-h1 font-medium leading-tight tracking-tight mb-3">
+            Find a clinic in {state.name}
           </h1>
-          <p className="flex flex-wrap items-center gap-2 text-body-lg text-ink-secondary max-w-2xl">
-            {totalClinics > 0 && <CountPill count={totalClinics} label="verified clinics" />}
-            <span>
-              {totalClinics > 0
-                ? `in ${state.name}. License-verified, patient-reviewed.`
-                : `Browse license-verified Botox and aesthetic clinics across ${state.name}. Real patient reviews.`}
-            </span>
-          </p>
+          {totalClinics > 0 && (
+            <div className="mt-5 flex flex-wrap gap-3">
+              <CountPill count={totalClinics} label="verified clinics" />
+            </div>
+          )}
+
+          {allCities.length > 0 && (
+            <LocationPicker
+              states={allCities.map((c) => ({ code: c.slug, name: c.name, slug: c.slug, count: c.clinicCount }))}
+              basePath={`/clinics/${state.slug}`}
+              label="Select a city"
+            />
+          )}
         </div>
       </section>
-
-      {allCities.length > 0 && (
-        <div className="bg-surface border-b border-border">
-          <div className="max-canvas py-3 max-w-sm">
-            <StateCityCombobox stateSlug={state.slug} stateName={state.name} cities={allCities} />
-          </div>
-        </div>
-      )}
-
-      {/* Service + Brand filter strip */}
-      {(treatments.length > 0 || brands.length > 0) && (
-        <div className="bg-surface border-b border-border">
-          <div className="max-canvas py-3 space-y-2.5">
-            {treatments.length > 0 && (
-              <div className="flex gap-2 overflow-x-auto scrollbar-none -mx-5 px-5 md:mx-0 md:px-0 md:flex-wrap">
-                <span className="flex-shrink-0 text-caption text-ink-tertiary uppercase tracking-wider font-semibold self-center mr-1 hidden md:inline">Services</span>
-                {treatments.map((t) => (
-                  <Link
-                    key={t.id}
-                    href={`/services/${t.slug}/${state.slug}`}
-                    className="flex-shrink-0 px-4 py-1.5 rounded-control border border-border text-body-sm font-medium text-ink-secondary hover:border-brand-accent hover:text-brand-accent transition"
-                  >
-                    {t.name}
-                  </Link>
-                ))}
-              </div>
-            )}
-            {brands.length > 0 && (
-              <div className="flex gap-2 overflow-x-auto scrollbar-none -mx-5 px-5 md:mx-0 md:px-0 md:flex-wrap">
-                <span className="flex-shrink-0 text-caption text-ink-tertiary uppercase tracking-wider font-semibold self-center mr-1 hidden md:inline">Brands</span>
-                {brands.map((b) => (
-                  <Link
-                    key={b.id}
-                    href={`/brands/${b.slug}/${state.slug}`}
-                    className="flex-shrink-0 px-4 py-1.5 rounded-control border border-border text-body-sm font-medium text-ink-secondary hover:border-brand-accent hover:text-brand-accent transition"
-                  >
-                    {b.name}
-                  </Link>
-                ))}
-              </div>
-            )}
-          </div>
-        </div>
-      )}
 
       <div className="section-pad bg-surface-canvas">
         <div className="max-canvas space-y-14">
@@ -235,11 +197,11 @@ export function StateHubPage({ data, schema }: Props) {
             </div>
           </div>
 
-          {/* Browse by city: full grid.
-              StateCityCombobox above is a search box whose options are
-              <button>s, so until 2026-09-07 this page had no crawlable link to
-              any of its city pages. This grid is that link set, matching the
-              pattern already used on BrandStatePage and ServiceStatePage. */}
+          {/* Browse by city: full grid. The city search box that used to sit
+              under the hero rendered its options as <button>s, so until
+              2026-09-07 this page had no crawlable link to any of its city
+              pages. That box was replaced by the hero picker on 2026-09-10;
+              this grid stays, matching BrandStatePage and ServiceStatePage. */}
           {allCities.length > 0 && (
             <div>
               <h2 className="font-serif text-h2 text-ink-primary mb-6">Cities in {state.name}</h2>

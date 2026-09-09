@@ -144,61 +144,24 @@ export function CityHubPage({ data, schema }: Props) {
         </div>
       </div>
 
-      {/* Hero */}
-      <section className="bg-surface-canvas pt-10 pb-8 border-b border-border">
-        <div className="max-canvas">
+      {/* Hero. Navy on purpose: the clinics path keeps its always-dark band
+          (Footer pattern) while borrowing the brand/service hero proportions.
+          No picker here, this is the bottom of the tree. */}
+      <section className="bg-[#0B1B34] text-white pb-8 pt-8 md:pb-10 md:pt-10">
+        <div className="max-canvas max-w-4xl">
           <span className="text-overline uppercase tracking-widest font-semibold text-brand-accent mb-3 block">
             {stateLocation?.name ?? city.stateCode}
           </span>
-          <h1 className="font-serif text-h1-m md:text-h1 font-medium leading-tight tracking-tight text-ink-primary mb-3">
+          <h1 className="font-serif text-h1-m md:text-h1 font-medium leading-tight tracking-tight mb-3">
             Find clinics in {cityDisplay}
           </h1>
-          <p className="flex flex-wrap items-center gap-2 text-body-lg text-ink-secondary max-w-2xl">
-            {totalClinics > 0 && <CountPill count={totalClinics} label="verified aesthetic clinics" />}
-            <span>
-              {totalClinics > 0
-                ? `in ${cityDisplay}. Choose a service or browse all below.`
-                : `Browse verified aesthetic clinics in ${cityDisplay}. Choose a service to get started.`}
-            </span>
-          </p>
+          {totalClinics > 0 && (
+            <div className="mt-5 flex flex-wrap gap-3">
+              <CountPill count={totalClinics} label="verified aesthetic clinics" />
+            </div>
+          )}
         </div>
       </section>
-
-      {/* Service + Brand picker chips */}
-      {(treatments.length > 0 || brands.length > 0) && (
-        <div className="bg-surface border-b border-border">
-          <div className="max-canvas py-3 space-y-2.5">
-            {treatments.length > 0 && (
-              <div className="flex gap-2 overflow-x-auto scrollbar-none -mx-5 px-5 md:mx-0 md:px-0 md:flex-wrap">
-                <span className="flex-shrink-0 text-caption text-ink-tertiary uppercase tracking-wider font-semibold self-center mr-1 hidden md:inline">Services</span>
-                {treatments.map((t) => (
-                  <Link
-                    key={t.id}
-                    href={stateLocation ? `/services/${t.slug}/${stateLocation.slug}/${city.slug}` : `/services/${t.slug}`}
-                    className="flex-shrink-0 px-4 py-1.5 rounded-control border border-border text-body-sm font-medium text-ink-secondary hover:border-brand-accent hover:text-brand-accent transition"
-                  >
-                    {t.name}
-                  </Link>
-                ))}
-              </div>
-            )}
-            {brands.length > 0 && (
-              <div className="flex gap-2 overflow-x-auto scrollbar-none -mx-5 px-5 md:mx-0 md:px-0 md:flex-wrap">
-                <span className="flex-shrink-0 text-caption text-ink-tertiary uppercase tracking-wider font-semibold self-center mr-1 hidden md:inline">Brands</span>
-                {brands.map((b) => (
-                  <Link
-                    key={b.id}
-                    href={stateLocation ? `/brands/${b.slug}/${stateLocation.slug}/${city.slug}` : `/brands/${b.slug}`}
-                    className="flex-shrink-0 px-4 py-1.5 rounded-control border border-border text-body-sm font-medium text-ink-secondary hover:border-brand-accent hover:text-brand-accent transition"
-                  >
-                    {b.name}
-                  </Link>
-                ))}
-              </div>
-            )}
-          </div>
-        </div>
-      )}
 
       <div className="section-pad bg-surface-canvas">
         <div className="max-canvas space-y-14">
@@ -304,22 +267,6 @@ export function CityHubPage({ data, schema }: Props) {
                   </li>
                 ))}
               </ul>
-            </div>
-          )}
-
-          {/* State link */}
-          {stateLocation && (
-            <div className="rounded-2xl border border-border bg-surface p-6">
-              <div className="flex items-center justify-between flex-wrap gap-3">
-                <div>
-                  <div className="font-semibold text-body text-ink-primary">All clinics in {stateLocation.name}</div>
-                  <div className="text-body-sm text-ink-secondary mt-0.5">Compare cities and services statewide.</div>
-                </div>
-                <Link href={`/clinics/${stateLocation.slug}`} className="flex items-center gap-1.5 text-body-sm text-brand-accent font-medium hover:underline flex-shrink-0">
-                  Browse {stateLocation.name}
-                  <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><polyline points="9 18 15 12 9 6"/></svg>
-                </Link>
-              </div>
             </div>
           )}
 

@@ -2,15 +2,12 @@
 
 import dynamic from 'next/dynamic'
 import Link from 'next/link'
-import { useRouter } from 'next/navigation'
 import { useEffect, useMemo, useRef, useState } from 'react'
 import type { ClinicListItem } from '@/lib/clinic-queries'
-import type { StateFilterOption } from '@/lib/location-queries'
 import type { MapPin } from '@/components/ui/ListingMapInner'
 import { useSaved } from '@/components/account/SavedItemsProvider'
 import { LazyMapMount } from '@/components/shared/LazyMapMount'
 import { ListingFilters } from '@/components/shared/ListingFilters'
-import { LocationFilterBar } from '@/components/shared/LocationFilterBar'
 import { DirectoryClinicCard } from '@/components/shared/DirectoryClinicCard'
 import { sortClinicsByMeritWithinBuckets } from '@/lib/merit'
 import {
@@ -38,7 +35,6 @@ type FilterOption = { id: string; name: string }
 type Props = {
   initialClinics: ClinicListItem[]
   totalClinics: number
-  stateOptions: StateFilterOption[]
   serviceOptions: FilterOption[]
   brandOptions: FilterOption[]
   loadFailed?: boolean
@@ -47,12 +43,10 @@ type Props = {
 export function ClinicsGrid({
   initialClinics,
   totalClinics,
-  stateOptions,
   serviceOptions,
   brandOptions,
   loadFailed = false,
 }: Props) {
-  const router = useRouter()
   const [viewMode, setViewMode] = useState<'list' | 'map'>('list')
   const [listingFilters, setListingFilters] = useState<ListingFilterValues>(DEFAULT_LISTING_FILTERS)
   const [allClinics, setAllClinics] = useState(initialClinics)
@@ -138,63 +132,11 @@ export function ClinicsGrid({
     await fetchClinics({ stateCode: code, city: '', nextPage: 1, append: false })
   }
 
-  async function handleCityChange(city: string) {
-    setSelectedCity(city)
-    setPage(1)
-    await fetchClinics({ stateCode: selectedState, city, nextPage: 1, append: false })
-  }
-
-  /**
-   * Picking a location navigates to that location's page instead of filtering
-   * this page in JS. Filtering in place left the URL on /clinics, so the
-   * location a visitor picked was not linkable, not shareable and had no page
-   * of its own for a crawler to reach. /clinics/texas and
-   * /clinics/texas/houston-tx are real pages that already carry the right
-   * heading, count, city grid and clinic list.
-   *
-   * Clearing back to "All states" stays on this page: there is no location to
-   * navigate to, so it just refetches the unfiltered listing.
-   *
-   * A missing slug means the selection has no location record behind it. That
-   * falls back to the old in-place filter rather than pushing a url that would
-   * 404.
-   */
-  async function handleLocationChange(
-    stateCode: string,
-    city: string,
-    slugs?: { stateSlug: string; citySlug: string },
-  ) {
-    if (!stateCode) {
-      await handleStateChange('')
-      return
-    }
-
-    const stateSlug = slugs?.stateSlug || stateOptions.find((s) => s.code === stateCode)?.slug || ''
-
-    if (stateCode !== selectedState) {
-      if (stateSlug) {
-        router.push(`/clinics/${stateSlug}`)
-        return
-      }
-      await handleStateChange(stateCode)
-      return
-    }
-
-    if (!city) {
-      if (stateSlug) {
-        router.push(`/clinics/${stateSlug}`)
-        return
-      }
-      await handleCityChange('')
-      return
-    }
-
-    if (stateSlug && slugs?.citySlug) {
-      router.push(`/clinics/${stateSlug}/${slugs.citySlug}`)
-      return
-    }
-    await handleCityChange(city)
-  }
+  // handleCityChange lived here until 2026-09-10. Its only caller was
+  // handleLocationChange, which went with the LocationFilterBar: picking a city
+  // now means navigating to that city's own page from the hero picker, not
+  // filtering this one. `selectedCity` stays because fetchClinics, loadMore and
+  // the filter effect all still read it; handleStateChange keeps it at ''.
 
   async function loadMore() {
     await fetchClinics({
@@ -244,16 +186,10 @@ export function ClinicsGrid({
       />
 
       <div className="min-w-0 flex-1 pb-24 md:pb-0">
-        {/* Filter bar - state/city + view toggle */}
+        {/* Filter bar - view toggle. The state/city selector moved into the
+            page hero as a LocationPicker on 2026-09-10; keeping it here too
+            would have been two controls doing the same job. */}
         <div className="flex flex-wrap gap-x-4 gap-y-3 items-center mb-5 pb-5 border-b border-border">
-          <LocationFilterBar
-            stateOptions={stateOptions}
-            selectedState={selectedState}
-            selectedCity={selectedCity}
-            onLocationChange={handleLocationChange}
-            disabled={isLoading}
-          />
-
           <div className="flex-1" />
 
           {/* List / Map toggle - unchanged */}

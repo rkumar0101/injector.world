@@ -4,6 +4,7 @@ import { Footer } from '@/components/footer/Footer'
 import { getClinicsListing, getClinicsStats } from '@/lib/clinic-queries'
 import { getPayloadInstance } from '@/lib/payload-server'
 import { getLocationFilterOptions, type StateFilterOption } from '@/lib/location-queries'
+import { LocationPicker } from '@/components/shared/LocationPicker'
 import { DEFAULT_OG_IMAGES } from '@/lib/seo-defaults'
 import { ClinicsGrid } from './ClinicsGrid'
 
@@ -56,8 +57,8 @@ export default async function ClinicsPage() {
       <Header />
 
       {/* Page hero — always-dark navy band (matches Footer pattern) */}
-      <section className="bg-[#0B1B34] text-white pt-32 pb-16 md:pt-36 md:pb-20">
-        <div className="max-canvas">
+      <section className="bg-[#0B1B34] text-white pb-8 pt-8 md:pb-10 md:pt-10">
+        <div className="max-canvas max-w-4xl">
           <p className="eyebrow text-brand-accent mb-4 tracking-widest">Clinics</p>
           <h1 className="font-serif text-h1-m md:text-h1 font-medium leading-tight tracking-tight mb-5 max-w-[680px]">
             Verified aesthetic clinics.
@@ -81,6 +82,16 @@ export default async function ClinicsPage() {
               </div>
             ))}
           </div>
+
+          {/* State picker, matching the brand and service pillar heroes. It
+              replaces the <select> that used to sit in the grid's filter bar,
+              and every state link ships in the served HTML. */}
+          {stateOptions.length > 0 && (
+            <LocationPicker
+              states={stateOptions.map((s) => ({ ...s, count: s.clinicCount }))}
+              basePath="/clinics"
+            />
+          )}
         </div>
       </section>
 
@@ -90,7 +101,6 @@ export default async function ClinicsPage() {
           <ClinicsGrid
             initialClinics={clinics}
             totalClinics={stats.total || clinics.length}
-            stateOptions={stateOptions}
             serviceOptions={serviceOptions}
             brandOptions={brandOptions}
             loadFailed={loadFailed}
