@@ -186,10 +186,11 @@ export function CityDirectoryPage({ data, banner, schema }: Props) {
       <section className="bg-surface-warm border-b border-border pb-8 pt-8 md:pb-10 md:pt-10">
         <div className="max-canvas max-w-4xl">
           <h1 className="font-serif text-h1-m md:text-h1 font-medium leading-tight tracking-tight text-ink-primary mb-3">
-            {/* "Clinics" added 2026-09-10 so this matches the brand city page,
-                which reads "Botox Clinics in Birmingham, AL". The two city h1s
-                were the last shape difference between the paths. */}
-            {service.name} Clinics in {cityDisplayName}, {stateCode}
+            {/* "Injectors", not "Clinics" (founder call, 2026-09-10). Both city
+                pages briefly read "Clinics" earlier the same day; "Injectors"
+                is what the pillar and the state pages say, so all four levels
+                of both paths now use the one word. */}
+            {service.name} Injectors in {cityDisplayName}, {stateCode}
           </h1>
           {service.tagline && (
             <p className="font-serif text-lede-m md:text-lede text-ink-secondary">{service.tagline}</p>

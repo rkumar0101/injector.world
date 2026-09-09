@@ -3,7 +3,15 @@
 import { useEffect, useRef, useState } from 'react'
 import Link from 'next/link'
 
-export type LocationPickerState = { code: string; name: string; slug: string }
+export type LocationPickerState = {
+  code: string
+  name: string
+  slug: string
+  /** Published clinics behind this option. Rendered on the right of the row when
+   *  above zero, so the menu reads "Birmingham   57" the way the city grid does.
+   *  Optional: a caller with no count simply renders the name alone. */
+  count?: number
+}
 
 type Props = {
   states: LocationPickerState[]
@@ -106,7 +114,10 @@ export function LocationPicker({ states, basePath, label }: Props) {
             onClick={() => setOpen(false)}
             className={itemCls}
           >
-            {state.name}
+            <span>{state.name}</span>
+            {state.count != null && state.count > 0 && (
+              <span className="text-ink-tertiary">{state.count.toLocaleString()}</span>
+            )}
           </Link>
         ))}
       </div>

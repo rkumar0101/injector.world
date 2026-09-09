@@ -59,7 +59,7 @@ export function BrandStatePage({ data, schema }: Props) {
 
           {cities.length > 0 && (
             <LocationPicker
-              states={cities.map((c) => ({ code: c.slug, name: c.name, slug: c.slug }))}
+              states={cities.map((c) => ({ code: c.slug, name: c.name, slug: c.slug, count: c.clinicCount }))}
               basePath={`/brands/${brand.slug}/${state.slug}`}
               label="Select a city"
             />

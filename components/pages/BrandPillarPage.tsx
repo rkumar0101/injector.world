@@ -54,7 +54,10 @@ export function BrandPillarPage({ data, schema }: Props) {
             </div>
           )}
 
-          <LocationPicker states={states} basePath={`/brands/${brand.slug}`} />
+          <LocationPicker
+            states={states.map((s) => ({ ...s, count: s.clinicCount }))}
+            basePath={`/brands/${brand.slug}`}
+          />
         </div>
       </section>
 

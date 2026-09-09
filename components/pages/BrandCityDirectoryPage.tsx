@@ -48,7 +48,7 @@ export function BrandCityDirectoryPage({ data, schema }: Props) {
       <section className="bg-surface-warm border-b border-border pb-8 pt-8 md:pb-10 md:pt-10">
         <div className="max-canvas max-w-4xl">
           <h1 className="font-serif text-h1-m md:text-h1 font-medium leading-tight tracking-tight text-ink-primary mb-3">
-            {brand.name} Clinics in {cityDisplay}, {city.stateCode}
+            {brand.name} Injectors in {cityDisplay}, {city.stateCode}
           </h1>
           {brand.tagline && (
             <p className="font-serif text-lede-m md:text-lede text-ink-secondary">{brand.tagline}</p>

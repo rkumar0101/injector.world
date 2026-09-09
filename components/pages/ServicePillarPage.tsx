@@ -63,7 +63,10 @@ export function ServicePillarPage({ data, banner, schema }: Props) {
             </div>
           )}
 
-          <LocationPicker states={states} basePath={`/services/${service.slug}`} />
+          <LocationPicker
+            states={states.map((s) => ({ ...s, count: s.clinicCount }))}
+            basePath={`/services/${service.slug}`}
+          />
         </div>
       </section>
 

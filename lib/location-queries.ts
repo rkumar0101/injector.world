@@ -406,7 +406,11 @@ export const getCityDirectory = cache(async function getCityDirectory(
 
 // ─── Service pillar ─────────────────────────────────────────────────────────
 
-export type StateEntry = { code: string; name: string; slug: string }
+/** `clinicCount` is the sum of the state's city counts, so the pillar's state
+ *  picker can show the same number the city picker one level down shows. Summed
+ *  rather than queried: `states` is already derived from `allCities`, so the
+ *  numbers are in hand and this costs nothing. */
+export type StateEntry = { code: string; name: string; slug: string; clinicCount: number }
 export type CityEntry = { name: string; slug: string; providerCount: number; stateCode: string; stateSlug: string }
 
 export type ServicePillarData = {
@@ -489,10 +493,16 @@ export const getServicePillar = cache(async function getServicePillar(serviceSlu
     })
     .filter((c): c is CityEntry => !!c && !!c.stateCode && !!c.stateSlug)
 
-  const stateCodes = new Set(allCities.map((c) => c.stateCode))
+  const clinicsByStateCode = new Map<string, number>()
+  for (const c of allCities) {
+    clinicsByStateCode.set(c.stateCode, (clinicsByStateCode.get(c.stateCode) ?? 0) + c.providerCount)
+  }
   const states: StateEntry[] = (statesRes.docs as any[])
-    .map((s: any) => ({ code: String(s.state ?? '').toUpperCase(), name: s.name, slug: s.slug }))
-    .filter((s) => s.code && stateCodes.has(s.code))
+    .map((s: any) => {
+      const code = String(s.state ?? '').toUpperCase()
+      return { code, name: s.name, slug: s.slug, clinicCount: clinicsByStateCode.get(code) ?? 0 }
+    })
+    .filter((s) => s.code && clinicsByStateCode.has(s.code))
 
   const relatedBrands = (relatedBrandsRes.docs as any[]).map((b: any) => ({
     id: String(b.id), name: b.name, slug: b.slug,
