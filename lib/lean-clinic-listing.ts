@@ -22,7 +22,7 @@ import {
   clinicDistanceMetersHaversine,
   isPostGisAvailable,
 } from './search-sql'
-import { NEAR_BUCKET_MILES } from './merit'
+import { NEAR_BUCKET_MILES, NEAR_ME_BUCKET_MILES } from './merit'
 import { BoundedTtlCache } from './bounded-ttl-cache'
 
 /**
@@ -288,11 +288,23 @@ export async function fetchLeanClinics(
       ? clinicDistanceMeters(lat, lng, 'c')
       : clinicDistanceMetersHaversine(lat, lng, 'c')
     const inBox = clinicBoundingBoxSql(lat, lng, NEAR_MAX_MILES, 'c')
-    const bucketMeters = NEAR_BUCKET_MILES * METERS_PER_MILE
+    /**
+     * A radius filter means the set is already local, so the bands have to be
+     * finer or they stop separating anything: inside 10 miles a 5-mile band put
+     * every page-1 clinic in one group and merit alone decided the order (see
+     * NEAR_ME_BUCKET_MILES). Without a radius the listing is unbounded and the
+     * wider band is still correct, which is what leaves state and city pages
+     * untouched.
+     *
+     * The browser re-sorts within these same bands, so it must be told the same
+     * width. Both sides derive it from the same test: radius set or not.
+     */
+    const bucketMiles = opts.radiusMiles != null ? NEAR_ME_BUCKET_MILES : NEAR_BUCKET_MILES
+    const bucketMeters = bucketMiles * METERS_PER_MILE
     // The box is a square around the circle, so its corners reach past
     // NEAR_MAX_MILES. Clamping keeps those corner rows in the last real band
     // instead of inventing bands beyond the cutoff.
-    const maxBucket = Math.floor(NEAR_MAX_MILES / NEAR_BUCKET_MILES)
+    const maxBucket = Math.floor(NEAR_MAX_MILES / bucketMiles)
     geoSelect = `,
              CASE WHEN ${inBox} THEN LEAST(floor(${distExpr} / ${bucketMeters}), ${maxBucket})
                   ELSE ${FAR_BUCKET} END AS geo_rank,

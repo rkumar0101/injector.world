@@ -108,6 +108,28 @@ export const NEAR_BUCKET_MILES = 5
  */
 export const NEAR_ME_RADIUS_MILES = 10
 
+/**
+ * Band width, in miles, once the listing is already bounded to a radius
+ * (2026-09-11).
+ *
+ * NEAR_BUCKET_MILES (5) is the right width for an unbounded listing, where the
+ * job is "lead with the visitor's region". It is the wrong width once the set is
+ * already 10 miles wide: in a dense city every clinic on page 1 falls inside the
+ * first 5-mile band, so there is effectively ONE band and merit alone decides
+ * the order. Measured on staging for 77009 -- the 24 rows came back ordered
+ * 4.51, 2.66, 4.45, 4.33, 2.05, 1.59 ... with review counts in perfect descent,
+ * and the nearest clinic (1.02 mi) sat 12th. That is the exact complaint the
+ * radius was meant to fix, reappearing one scale down.
+ *
+ * At 1 mile the same set orders 1.02, 1.59, 1.76, 1.77, 2.04, 2.05 ... and merit
+ * only separates clinics that are genuinely the same distance away, which is
+ * what "near me" has to mean.
+ *
+ * Used only when a radius filter is active. Without one the width stays
+ * NEAR_BUCKET_MILES, so state and city listings are unaffected.
+ */
+export const NEAR_ME_BUCKET_MILES = 1
+
 // ─── Extended provider shape ─────────────────────────────────────────────────
 // DirectoryProvider has most fields we need. bio and updatedAt are optional
 // additions supplied by mapProvider; they gracefully degrade to 0 if absent.

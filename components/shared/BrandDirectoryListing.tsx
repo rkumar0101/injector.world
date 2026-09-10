@@ -15,7 +15,11 @@ import {
   withNearMeDefault,
   type ListingFilterValues,
 } from './applyListingFilters'
-import { sortClinicsByMeritWithinBuckets } from '@/lib/merit'
+import {
+  sortClinicsByMeritWithinBuckets,
+  NEAR_BUCKET_MILES,
+  NEAR_ME_BUCKET_MILES,
+} from '@/lib/merit'
 import type { DirectoryClinic } from '@/lib/location-queries'
 
 type FilterOption = { id: string; name: string }
@@ -86,9 +90,15 @@ export function BrandDirectoryListing({
   // Distance band first, merit inside the band. When the visitor could not be
   // located, every clinic has no distance, every clinic lands in the same band,
   // and this degrades to exactly the plain merit sort it replaced.
+  //
+  // The band width must match the one the SQL banded by, or the two disagree and
+  // the browser undoes the server's ordering. Both derive it from the same test:
+  // a radius means the set is already local, so the bands go fine.
+  const bucketMiles =
+    effectiveFilters.radius != null ? NEAR_ME_BUCKET_MILES : NEAR_BUCKET_MILES
   const meritSortedClinics = useMemo(
-    () => sortClinicsByMeritWithinBuckets(displayedClinics),
-    [displayedClinics],
+    () => sortClinicsByMeritWithinBuckets(displayedClinics, bucketMiles),
+    [displayedClinics, bucketMiles],
   )
   const filtered = useMemo(
     () => applyListingFilters(meritSortedClinics, effectiveFilters, 'clinic').items,
@@ -187,7 +197,11 @@ export function BrandDirectoryListing({
         ) : filtered.length > 0 ? (
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 md:gap-5">
             {filtered.map((c) => (
-              <DirectoryClinicCard key={c.id} c={c} />
+              // Distance is what makes a near-me list readable: without it the
+              // order looks arbitrary even when it is correct. Undefined means
+              // "not measured", so the card shows no distance line rather than
+              // claiming 0 miles.
+              <DirectoryClinicCard key={c.id} c={c} dist={c.distanceMiles ?? null} />
             ))}
           </div>
         ) : (

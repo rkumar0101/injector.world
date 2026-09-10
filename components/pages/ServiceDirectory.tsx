@@ -14,7 +14,11 @@ import {
   withNearMeDefault,
   type ListingFilterValues,
 } from '@/components/shared/applyListingFilters'
-import { sortClinicsByMeritWithinBuckets } from '@/lib/merit'
+import {
+  sortClinicsByMeritWithinBuckets,
+  NEAR_BUCKET_MILES,
+  NEAR_ME_BUCKET_MILES,
+} from '@/lib/merit'
 import type { DirectoryClinic } from '@/lib/location-queries'
 
 export function ServiceDirectory({
@@ -73,9 +77,15 @@ export function ServiceDirectory({
 
   // Distance band first, merit inside the band. With no visitor location every
   // clinic shares one band and this is identical to the plain merit sort.
+  //
+  // The width must match the one the SQL banded by, or the browser undoes the
+  // server's ordering. Both sides derive it from the same test: a radius means
+  // the set is already local, so the bands go fine.
+  const bucketMiles =
+    effectiveFilters.radius != null ? NEAR_ME_BUCKET_MILES : NEAR_BUCKET_MILES
   const meritSortedClinics = useMemo(
-    () => sortClinicsByMeritWithinBuckets(displayedClinics),
-    [displayedClinics],
+    () => sortClinicsByMeritWithinBuckets(displayedClinics, bucketMiles),
+    [displayedClinics, bucketMiles],
   )
   const filteredClinics = useMemo(
     () => applyListingFilters(meritSortedClinics, effectiveFilters, 'clinic').items,
@@ -165,7 +175,9 @@ export function ServiceDirectory({
           <>
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 md:gap-6">
               {filteredClinics.map((c) => (
-                <DirectoryClinicCard key={c.id} c={c} />
+                // Undefined means "not measured", so the card shows no distance
+                // line rather than claiming 0 miles.
+                <DirectoryClinicCard key={c.id} c={c} dist={c.distanceMiles ?? null} />
               ))}
             </div>
             {/* serverTotal, not the totalClinics prop: with a ZIP applied the
