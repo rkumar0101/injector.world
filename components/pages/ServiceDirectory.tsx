@@ -3,11 +3,15 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
 import { DirectoryClinicCard } from '@/components/shared/DirectoryClinicCard'
 import { ListingFilters } from '@/components/shared/ListingFilters'
+import { ClinicCardSkeletonGrid } from '@/components/shared/ClinicCardSkeletonGrid'
+import { NearMeHeader } from '@/components/shared/NearMeHeader'
+import { useNearMe } from '@/components/shared/useNearMe'
 import {
   DEFAULT_LISTING_FILTERS,
   applyListingFilters,
   serverFilterKey,
   toServerFilterParams,
+  withNearMeDefault,
   type ListingFilterValues,
 } from '@/components/shared/applyListingFilters'
 import { sortClinicsByMeritWithinBuckets } from '@/lib/merit'
@@ -20,6 +24,7 @@ export function ServiceDirectory({
   stateSlug,
   totalClinics,
   brandOptions,
+  listingHeading,
 }: {
   clinics: DirectoryClinic[]
   serviceName: string
@@ -28,6 +33,8 @@ export function ServiceDirectory({
   stateSlug?: string
   totalClinics?: number
   brandOptions?: Array<{ id: string; name: string; slug: string }>
+  /** Heading for the listing when no ZIP is in play. Pillar page only. */
+  listingHeading?: string
 }) {
   const [displayedClinics, setDisplayedClinics] = useState<DirectoryClinic[]>(clinics)
   const [listingFilters, setListingFilters] = useState<ListingFilterValues>(DEFAULT_LISTING_FILTERS)
@@ -35,6 +42,27 @@ export function ServiceDirectory({
   const [isLoading, setIsLoading] = useState(false)
   const [loadError, setLoadError] = useState<string | null>(null)
   const [serverTotal, setServerTotal] = useState<number | undefined>(totalClinics)
+
+  /**
+   * Near-me applies only on the service PILLAR page, where the visitor has
+   * chosen no location. With `stateSlug` set this is /services/<svc>/<state>
+   * and the choice is already made. The city page does not use this component
+   * at all (it renders DirectoryClinicsView), so the absent-slug test cannot
+   * leak there either.
+   */
+  const near = useNearMe()
+  const nearMeEnabled = !stateSlug
+  const effectiveFilters = useMemo(
+    () =>
+      withNearMeDefault(listingFilters, {
+        enabled: nearMeEnabled,
+        ready: near.status === 'ready',
+        lat: near.lat,
+        lng: near.lng,
+      }),
+    [listingFilters, nearMeEnabled, near.status, near.lat, near.lng],
+  )
+  const showSkeleton = nearMeEnabled && near.status === 'resolving'
 
   useEffect(() => {
     setDisplayedClinics(clinics)
@@ -50,11 +78,11 @@ export function ServiceDirectory({
     [displayedClinics],
   )
   const filteredClinics = useMemo(
-    () => applyListingFilters(meritSortedClinics, listingFilters, 'clinic').items,
-    [meritSortedClinics, listingFilters],
+    () => applyListingFilters(meritSortedClinics, effectiveFilters, 'clinic').items,
+    [meritSortedClinics, effectiveFilters],
   )
 
-  const showLoadMore = Boolean(serverTotal && displayedClinics.length < serverTotal)
+  const showLoadMore = Boolean(!showSkeleton && serverTotal && displayedClinics.length < serverTotal)
 
   async function fetchPage(nextPage: number, append: boolean) {
     setIsLoading(true)
@@ -65,7 +93,7 @@ export function ServiceDirectory({
       if (stateSlug) params.set('stateSlug', stateSlug)
       // Brand / service / clinic type / rating are resolved server-side as of
       // 2026-08-07, so totalDocs is the real match count for the filters.
-      toServerFilterParams(listingFilters).forEach((value, key) => params.set(key, value))
+      toServerFilterParams(effectiveFilters).forEach((value, key) => params.set(key, value))
 
       const res = await fetch(`/api/service-city-clinics?${params.toString()}`)
       if (!res.ok) throw new Error('Unable to load more clinics.')
@@ -94,8 +122,12 @@ export function ServiceDirectory({
   // Re-query from page 1 when a server-handled filter changes. The ref holds
   // the last key actually fetched, so the server-rendered first page is not
   // re-requested on mount.
-  const serverKey = serverFilterKey(listingFilters)
-  const appliedServerKey = useRef(serverKey)
+  //
+  // Seeded with the SERVER-RENDERED listing's key, not the first client key: a
+  // returning visitor's saved ZIP resolves before the first render finishes,
+  // and seeding with the current key would mark that query as already fetched.
+  const serverKey = serverFilterKey(effectiveFilters)
+  const appliedServerKey = useRef(serverFilterKey(DEFAULT_LISTING_FILTERS))
   useEffect(() => {
     if (appliedServerKey.current === serverKey) return
     appliedServerKey.current = serverKey
@@ -116,7 +148,18 @@ export function ServiceDirectory({
       />
 
       <div className="min-w-0 flex-1 pb-20 md:pb-0">
-        {filteredClinics.length === 0 ? (
+        <NearMeHeader
+          near={near}
+          enabled={nearMeEnabled}
+          total={serverTotal}
+          fallbackHeading={listingHeading}
+        />
+
+        {showSkeleton ? (
+          // One render, in final form. Without this the national list paints
+          // first and is then replaced when geo lands.
+          <ClinicCardSkeletonGrid />
+        ) : filteredClinics.length === 0 ? (
           <EmptyState serviceName={serviceName} />
         ) : (
           <>
@@ -125,8 +168,12 @@ export function ServiceDirectory({
                 <DirectoryClinicCard key={c.id} c={c} />
               ))}
             </div>
+            {/* serverTotal, not the totalClinics prop: with a ZIP applied the
+                prop is still the national count, and a national number under a
+                10-mile list is simply wrong. serverTotal tracks whatever the
+                last query actually matched. */}
             <p className="mt-6 text-body-sm text-ink-tertiary text-center">
-              Showing {filteredClinics.length} of {(totalClinics ?? filteredClinics.length).toLocaleString()} clinics
+              Showing {filteredClinics.length} of {(serverTotal ?? filteredClinics.length).toLocaleString()} clinics
             </p>
             {loadError && (
               <p className="mt-4 text-body-sm text-state-error text-center" role="status">{loadError}</p>
@@ -139,7 +186,7 @@ export function ServiceDirectory({
                   disabled={isLoading}
                   className="inline-flex items-center gap-2 px-6 py-3 rounded-control border border-border text-body-sm font-medium text-ink-primary hover:border-brand-accent hover:bg-surface transition disabled:opacity-50"
                 >
-                  {isLoading ? 'Loading...' : `Load more clinics (${Math.max(0, (totalClinics ?? 0) - displayedClinics.length)} remaining)`}
+                  {isLoading ? 'Loading...' : `Load more clinics (${Math.max(0, (serverTotal ?? 0) - displayedClinics.length)} remaining)`}
                 </button>
               </div>
             )}

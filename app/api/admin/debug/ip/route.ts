@@ -4,6 +4,7 @@ import config from '@/payload.config'
 import { getAuthUser } from '@/lib/auth-user'
 import { requireAdmin } from '@/lib/auth-guards'
 import { getIp } from '@/lib/rate-limit'
+import { lookupGeo } from '@/lib/geo-ip'
 
 export const dynamic = 'force-dynamic'
 
@@ -46,9 +47,30 @@ export async function GET(req: NextRequest) {
 
   const trustCount = Math.max(1, parseInt(process.env.TRUSTED_PROXY_COUNT || '1', 10))
 
+  /**
+   * Every `cf-*` header, collected by iterating the request rather than by
+   * listing names we think Cloudflare uses. The visitor-location Managed
+   * Transform ("Add visitor location headers") is a dashboard toggle, and the
+   * exact names it adds are what this route exists to report -- guessing them
+   * from memory is how a geo path ships reading a header that never arrives.
+   *
+   * Header values are not secrets, but this route is admin-gated anyway because
+   * the full set describes the edge configuration.
+   */
+  const cloudflareHeaders: Record<string, string> = {}
+  req.headers.forEach((value, name) => {
+    if (name.toLowerCase().startsWith('cf-')) cloudflareHeaders[name.toLowerCase()] = value
+  })
+
+  // The current geo source, side by side with the headers above, so the two can
+  // be compared against a known real ZIP in one look.
+  const ipApi = await lookupGeo(getIp(req))
+
   return NextResponse.json(
     {
       resolved: getIp(req),
+      cloudflareHeaders,
+      ipApi,
       config: {
         TRUSTED_PROXY_COUNT: trustCount,
         TRUST_CF_HEADERS: process.env.TRUST_CF_HEADERS === 'true',

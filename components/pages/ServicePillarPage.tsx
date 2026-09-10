@@ -84,15 +84,17 @@ export function ServicePillarPage({ data, banner, schema }: Props) {
 
           {/* Directory: clinics offering this service */}
           <div>
-            <h2 className="font-serif text-h2 text-ink-primary mb-8">
-              Find a {service.name} clinic near you
-            </h2>
+            {/* The listing heading moved INTO ServiceDirectory on 2026-09-10 so
+                the ZIP-located version ("Top Clinics in 77009, Houston, TX")
+                can replace it after hydration. It is still server-rendered from
+                there, so the served HTML is unchanged. */}
             <ServiceDirectory
               clinics={serviceClinics}
               serviceName={service.name}
               serviceSlug={service.slug}
               totalClinics={totalClinics}
               brandOptions={relatedBrands}
+              listingHeading={`Find a ${service.name} clinic near you`}
             />
           </div>
 

@@ -74,15 +74,17 @@ export function BrandPillarPage({ data, schema }: Props) {
 
           {/* Top clinics listing with services filter */}
           <div>
-            <h2 className="font-serif text-h2 text-ink-primary mb-8">
-              Find a {brand.name} provider near you
-            </h2>
+            {/* The listing heading moved INTO BrandDirectoryListing on
+                2026-09-10 so the ZIP-located version ("Top Clinics in 77009,
+                Houston, TX") can replace it after hydration. It is still
+                server-rendered from there, so the served HTML is unchanged. */}
             <BrandDirectoryListing
               clinics={topClinics}
               serviceOptions={relatedServices.map((s) => ({ id: s.id, name: s.name }))}
               emptyMessage={`No ${brand.name} clinics found yet.`}
               brandSlug={brand.slug}
               totalClinics={totalClinics}
+              listingHeading={`Find a ${brand.name} provider near you`}
             />
           </div>
 

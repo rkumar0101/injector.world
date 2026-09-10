@@ -94,6 +94,20 @@ const RECENCY_STALE_DAYS = 730
  */
 export const NEAR_BUCKET_MILES = 5
 
+/**
+ * Radius, in miles, for the ZIP-located default listing on the three pillar
+ * pages (2026-09-10, founder call). See docs/ZIP-NEAR-ME-LISTING-2026-09-10.md
+ *
+ * Not the ZIP itself: a single ZIP holds a median of 4 published clinics and
+ * ~33,000 of 41,488 US ZIPs hold none, so an exact-ZIP listing would be empty
+ * for most visitors. 10 miles around the centroid is 307 clinics in Houston --
+ * a full page that still reads as local.
+ *
+ * 10 is also one of RADIUS_OPTIONS in ListingFilters, so this default and the
+ * left-hand radius control agree by construction. Keep it that way.
+ */
+export const NEAR_ME_RADIUS_MILES = 10
+
 // ─── Extended provider shape ─────────────────────────────────────────────────
 // DirectoryProvider has most fields we need. bio and updatedAt are optional
 // additions supplied by mapProvider; they gracefully degrade to 0 if absent.

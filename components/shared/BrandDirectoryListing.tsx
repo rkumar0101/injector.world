@@ -4,11 +4,15 @@ import { useState, useMemo, useEffect, useRef } from 'react'
 import Link from 'next/link'
 import { ListingFilters } from './ListingFilters'
 import { DirectoryClinicCard } from './DirectoryClinicCard'
+import { ClinicCardSkeletonGrid } from './ClinicCardSkeletonGrid'
+import { NearMeHeader } from './NearMeHeader'
+import { useNearMe } from './useNearMe'
 import {
   DEFAULT_LISTING_FILTERS,
   applyListingFilters,
   serverFilterKey,
   toServerFilterParams,
+  withNearMeDefault,
   type ListingFilterValues,
 } from './applyListingFilters'
 import { sortClinicsByMeritWithinBuckets } from '@/lib/merit'
@@ -26,6 +30,8 @@ type Props = {
   stateSlug?: string
   citySlug?: string
   totalClinics?: number
+  /** Heading for the listing when no ZIP is in play. Pillar page only. */
+  listingHeading?: string
 }
 
 export function BrandDirectoryListing({
@@ -38,6 +44,7 @@ export function BrandDirectoryListing({
   stateSlug,
   citySlug,
   totalClinics,
+  listingHeading,
 }: Props) {
   const [displayedClinics, setDisplayedClinics] = useState<DirectoryClinic[]>(clinics)
   const [listingFilters, setListingFilters] = useState<ListingFilterValues>(DEFAULT_LISTING_FILTERS)
@@ -45,6 +52,29 @@ export function BrandDirectoryListing({
   const [isLoading, setIsLoading] = useState(false)
   const [loadError, setLoadError] = useState<string | null>(null)
   const [serverTotal, setServerTotal] = useState<number | undefined>(totalClinics)
+
+  /**
+   * Near-me applies only where the visitor has chosen no location, i.e. the
+   * brand PILLAR page. On /brands/<brand>/<state> and .../<city> they have
+   * already chosen one and overriding it with their IP would be wrong.
+   *
+   * The test is the absence of both slugs rather than a new boolean prop, so it
+   * is structurally impossible to leak onto a state or city page: those routes
+   * cannot render this component without passing them.
+   */
+  const near = useNearMe()
+  const nearMeEnabled = !stateSlug && !citySlug
+  const effectiveFilters = useMemo(
+    () =>
+      withNearMeDefault(listingFilters, {
+        enabled: nearMeEnabled,
+        ready: near.status === 'ready',
+        lat: near.lat,
+        lng: near.lng,
+      }),
+    [listingFilters, nearMeEnabled, near.status, near.lat, near.lng],
+  )
+  const showSkeleton = nearMeEnabled && near.status === 'resolving'
 
   useEffect(() => {
     setDisplayedClinics(clinics)
@@ -61,12 +91,12 @@ export function BrandDirectoryListing({
     [displayedClinics],
   )
   const filtered = useMemo(
-    () => applyListingFilters(meritSortedClinics, listingFilters, 'clinic').items,
-    [meritSortedClinics, listingFilters],
+    () => applyListingFilters(meritSortedClinics, effectiveFilters, 'clinic').items,
+    [meritSortedClinics, effectiveFilters],
   )
 
   const showLoadMore = Boolean(
-    brandSlug && serverTotal && displayedClinics.length < serverTotal,
+    !showSkeleton && brandSlug && serverTotal && displayedClinics.length < serverTotal,
   )
 
   async function fetchPage(nextPage: number, append: boolean) {
@@ -84,7 +114,7 @@ export function BrandDirectoryListing({
       if (citySlug) params.set('citySlug', citySlug)
       // Brand / service / clinic type / rating are resolved server-side as of
       // 2026-08-07, so totalDocs is the real match count for the filters.
-      toServerFilterParams(listingFilters).forEach((value, key) => params.set(key, value))
+      toServerFilterParams(effectiveFilters).forEach((value, key) => params.set(key, value))
 
       const res = await fetch(`/api/brand-clinics?${params.toString()}`)
       if (!res.ok) throw new Error('Unable to load more clinics.')
@@ -113,8 +143,14 @@ export function BrandDirectoryListing({
   // Re-query from page 1 when a server-handled filter changes. The ref holds
   // the last key actually fetched, so the server-rendered first page is not
   // re-requested on mount.
-  const serverKey = serverFilterKey(listingFilters)
-  const appliedServerKey = useRef(serverKey)
+  //
+  // Seeded with the key of the SERVER-RENDERED listing (no filters, no
+  // near-me), not with the first client key. A returning visitor resolves their
+  // saved ZIP before the first render finishes, so seeding with the current key
+  // would record the ZIP query as already fetched and leave the national list
+  // on screen under a local heading.
+  const serverKey = serverFilterKey(effectiveFilters)
+  const appliedServerKey = useRef(serverFilterKey(DEFAULT_LISTING_FILTERS))
   useEffect(() => {
     if (appliedServerKey.current === serverKey) return
     appliedServerKey.current = serverKey
@@ -137,7 +173,18 @@ export function BrandDirectoryListing({
       />
 
       <div className="min-w-0 flex-1">
-        {filtered.length > 0 ? (
+        <NearMeHeader
+          near={near}
+          enabled={nearMeEnabled}
+          total={serverTotal}
+          fallbackHeading={listingHeading}
+        />
+
+        {showSkeleton ? (
+          // The list appears once, in its final form, instead of appearing
+          // national and then being replaced when geo lands.
+          <ClinicCardSkeletonGrid />
+        ) : filtered.length > 0 ? (
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 md:gap-5">
             {filtered.map((c) => (
               <DirectoryClinicCard key={c.id} c={c} />

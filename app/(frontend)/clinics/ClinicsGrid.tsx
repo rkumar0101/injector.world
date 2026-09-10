@@ -9,12 +9,16 @@ import { useSaved } from '@/components/account/SavedItemsProvider'
 import { LazyMapMount } from '@/components/shared/LazyMapMount'
 import { ListingFilters } from '@/components/shared/ListingFilters'
 import { DirectoryClinicCard } from '@/components/shared/DirectoryClinicCard'
+import { ClinicCardSkeletonGrid } from '@/components/shared/ClinicCardSkeletonGrid'
+import { NearMeHeader } from '@/components/shared/NearMeHeader'
+import { useNearMe } from '@/components/shared/useNearMe'
 import { sortClinicsByMeritWithinBuckets } from '@/lib/merit'
 import {
   DEFAULT_LISTING_FILTERS,
   applyListingFilters,
   serverFilterKey,
   toServerFilterParams,
+  withNearMeDefault,
   type ListingFilterValues,
 } from '@/components/shared/applyListingFilters'
 
@@ -65,6 +69,30 @@ export function ClinicsGrid({
   const { savedClinics, isSaved, toggle, loggedIn, ready } = useSaved()
   const [activeMapPin, setActiveMapPin] = useState<string | null>(null)
 
+  /**
+   * Near-me applies here because /clinics is the one route that renders this
+   * grid: /clinics/<state> and /clinics/<state>/<city> use StateHubPage and
+   * CityHubPage instead, so the visitor on this page has chosen no location.
+   *
+   * Asserted rather than assumed. `selectedState` / `selectedCity` are '' on
+   * this page today, but if a location scope is ever set here the visitor has
+   * made a choice and their IP must not override it -- the same rule the brand
+   * and service listings enforce through their state and city slugs.
+   */
+  const near = useNearMe()
+  const nearMeEnabled = !selectedState && !selectedCity
+  const effectiveFilters = useMemo(
+    () =>
+      withNearMeDefault(listingFilters, {
+        enabled: nearMeEnabled,
+        ready: near.status === 'ready',
+        lat: near.lat,
+        lng: near.lng,
+      }),
+    [listingFilters, nearMeEnabled, near.status, near.lat, near.lng],
+  )
+  const showSkeleton = nearMeEnabled && near.status === 'resolving'
+
   // Distance band first, merit inside the band (2026-08-15). The server has
   // already ordered the page by band; this settles the order within each one.
   // With no visitor location every clinic shares one band, so the result is the
@@ -74,11 +102,11 @@ export function ClinicsGrid({
     [allClinics],
   )
   const listingFiltered = useMemo(
-    () => applyListingFilters(bandSorted, listingFilters, 'clinic').items,
-    [bandSorted, listingFilters],
+    () => applyListingFilters(bandSorted, effectiveFilters, 'clinic').items,
+    [bandSorted, effectiveFilters],
   )
 
-  const hasMore = allClinics.length < currentTotal
+  const hasMore = !showSkeleton && allClinics.length < currentTotal
 
   async function fetchClinics({
     stateCode,
@@ -103,7 +131,7 @@ export function ClinicsGrid({
       // Brand / service / clinic type / rating are resolved in SQL as of
       // 2026-08-07, so the page that comes back is already filtered and
       // totalDocs is the real match count.
-      toServerFilterParams(listingFilters).forEach((value, key) => params.set(key, value))
+      toServerFilterParams(effectiveFilters).forEach((value, key) => params.set(key, value))
 
       const res = await fetch(`/api/clinics-list?${params.toString()}`)
       if (!res.ok) throw new Error('Unable to load clinics.')
@@ -150,8 +178,12 @@ export function ClinicsGrid({
   // Re-query from page 1 whenever a server-handled filter changes. The ref
   // holds the last key actually fetched, so the first render (already
   // server-rendered, unfiltered) does not trigger a pointless round trip.
-  const serverKey = serverFilterKey(listingFilters)
-  const appliedServerKey = useRef(serverKey)
+  //
+  // Seeded with the SERVER-RENDERED listing's key, not the first client key: a
+  // returning visitor's saved ZIP resolves before the first render finishes,
+  // and seeding with the current key would mark that query as already fetched.
+  const serverKey = serverFilterKey(effectiveFilters)
+  const appliedServerKey = useRef(serverFilterKey(DEFAULT_LISTING_FILTERS))
   useEffect(() => {
     if (appliedServerKey.current === serverKey) return
     appliedServerKey.current = serverKey
@@ -218,10 +250,17 @@ export function ClinicsGrid({
           </div>
         </div>
 
+        {/* ZIP heading + count + the ZIP changer. Rendered here, on the page
+            canvas, never in the navy hero above -- nothing inside that band may
+            carry text-ink-*. */}
+        <NearMeHeader near={near} enabled={nearMeEnabled} total={currentTotal} />
+
         {/* Count + saved */}
         <div className="flex items-center justify-between mb-6">
+          {/* Held back while the ZIP resolves, for the same reason the cards
+              are: a national count that changes a moment later is the flash. */}
           <p className="text-body-sm text-ink-tertiary">
-            {listingFiltered.length} {listingFiltered.length === 1 ? 'clinic' : 'clinics'}
+            {showSkeleton ? ' ' : `${listingFiltered.length} ${listingFiltered.length === 1 ? 'clinic' : 'clinics'}`}
           </p>
           {savedClinics.size > 0 && (
             <span className="flex items-center gap-1.5 text-body-sm text-brand-accent">
@@ -255,7 +294,11 @@ export function ClinicsGrid({
         )}
 
         {/* Grid */}
-        {listingFiltered.length === 0 && initialLoadFailed ? (
+        {showSkeleton ? (
+          // One render, in final form. Without this the national list paints
+          // first and is then replaced when geo lands.
+          <ClinicCardSkeletonGrid />
+        ) : listingFiltered.length === 0 && initialLoadFailed ? (
           <div className="text-center py-20">
             <p className="text-body text-ink-secondary">Couldn&apos;t load clinics right now.</p>
             <p className="text-body-sm text-ink-tertiary mt-1">

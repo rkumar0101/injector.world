@@ -1,3 +1,5 @@
+import { NEAR_ME_RADIUS_MILES } from '@/lib/merit'
+
 export type ListingItemKind = 'provider' | 'clinic'
 
 export type ListingFilterValues = {
@@ -162,6 +164,31 @@ export function applyListingFilters<T>(
     })
 
   return { items: scored.map((r) => r.item), scored }
+}
+
+/**
+ * The near-me default folded into the panel's filters (2026-09-10).
+ *
+ * Returns the filters UNCHANGED unless every condition holds: this listing is
+ * one of the three pillar pages, a ZIP has been resolved, and the visitor has
+ * not picked a distance themselves. That last one is the important one -- an
+ * explicit choice in the filter panel always wins over the automatic default,
+ * and it is also what keeps this reversible: pick a distance and the panel is
+ * back in charge of both the radius and the point.
+ *
+ * This is deliberately NOT routed through ListingFilters.writeFilters(), which
+ * pushes radius/lat/lng into the URL. The automatic default must never touch
+ * the address bar; only a user action in the panel may.
+ * See docs/ZIP-NEAR-ME-LISTING-2026-09-10.md hard rule 3.
+ */
+export function withNearMeDefault(
+  filters: ListingFilterValues,
+  near: { enabled: boolean; ready: boolean; lat: number | null; lng: number | null },
+): ListingFilterValues {
+  if (!near.enabled || !near.ready) return filters
+  if (near.lat == null || near.lng == null) return filters
+  if (filters.radius != null) return filters
+  return { ...filters, lat: near.lat, lng: near.lng, radius: NEAR_ME_RADIUS_MILES }
 }
 
 /**
