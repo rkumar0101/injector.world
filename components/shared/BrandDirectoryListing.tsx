@@ -15,11 +15,7 @@ import {
   withNearMeDefault,
   type ListingFilterValues,
 } from './applyListingFilters'
-import {
-  sortClinicsByMeritWithinBuckets,
-  NEAR_BUCKET_MILES,
-  NEAR_ME_BUCKET_MILES,
-} from '@/lib/merit'
+import { sortClinicsByDistance, sortClinicsByMeritWithinBuckets } from '@/lib/merit'
 import type { DirectoryClinic } from '@/lib/location-queries'
 
 type FilterOption = { id: string; name: string }
@@ -91,14 +87,16 @@ export function BrandDirectoryListing({
   // located, every clinic has no distance, every clinic lands in the same band,
   // and this degrades to exactly the plain merit sort it replaced.
   //
-  // The band width must match the one the SQL banded by, or the two disagree and
-  // the browser undoes the server's ordering. Both derive it from the same test:
-  // a radius means the set is already local, so the bands go fine.
-  const bucketMiles =
-    effectiveFilters.radius != null ? NEAR_ME_BUCKET_MILES : NEAR_BUCKET_MILES
+  // With a radius set (the near-me default, or a distance picked in the panel)
+  // the list is nearest first instead. The SQL makes the same choice on the
+  // same test, so the browser never undoes the server's order.
+  const byDistance = effectiveFilters.radius != null
   const meritSortedClinics = useMemo(
-    () => sortClinicsByMeritWithinBuckets(displayedClinics, bucketMiles),
-    [displayedClinics, bucketMiles],
+    () =>
+      byDistance
+        ? sortClinicsByDistance(displayedClinics)
+        : sortClinicsByMeritWithinBuckets(displayedClinics),
+    [displayedClinics, byDistance],
   )
   const filtered = useMemo(
     () => applyListingFilters(meritSortedClinics, effectiveFilters, 'clinic').items,

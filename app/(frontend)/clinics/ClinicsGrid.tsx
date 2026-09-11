@@ -12,11 +12,7 @@ import { DirectoryClinicCard } from '@/components/shared/DirectoryClinicCard'
 import { ClinicCardSkeletonGrid } from '@/components/shared/ClinicCardSkeletonGrid'
 import { NearMeHeader } from '@/components/shared/NearMeHeader'
 import { useNearMe } from '@/components/shared/useNearMe'
-import {
-  sortClinicsByMeritWithinBuckets,
-  NEAR_BUCKET_MILES,
-  NEAR_ME_BUCKET_MILES,
-} from '@/lib/merit'
+import { sortClinicsByDistance, sortClinicsByMeritWithinBuckets } from '@/lib/merit'
 import {
   DEFAULT_LISTING_FILTERS,
   applyListingFilters,
@@ -102,14 +98,16 @@ export function ClinicsGrid({
   // With no visitor location every clinic shares one band, so the result is the
   // server's own rating-count order, which is what this list showed before.
   //
-  // The width must match the one the SQL banded by, or the browser undoes the
-  // server's ordering. Both sides derive it from the same test: a radius means
-  // the set is already local, so the bands go fine.
-  const bucketMiles =
-    effectiveFilters.radius != null ? NEAR_ME_BUCKET_MILES : NEAR_BUCKET_MILES
+  // With a radius set (the near-me default, or a distance picked in the panel)
+  // the list is nearest first instead. The SQL makes the same choice on the
+  // same test, so the browser never undoes the server's order.
+  const byDistance = effectiveFilters.radius != null
   const bandSorted = useMemo(
-    () => sortClinicsByMeritWithinBuckets(allClinics, bucketMiles),
-    [allClinics, bucketMiles],
+    () =>
+      byDistance
+        ? sortClinicsByDistance(allClinics)
+        : sortClinicsByMeritWithinBuckets(allClinics),
+    [allClinics, byDistance],
   )
   const listingFiltered = useMemo(
     () => applyListingFilters(bandSorted, effectiveFilters, 'clinic').items,

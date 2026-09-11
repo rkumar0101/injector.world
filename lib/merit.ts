@@ -108,28 +108,6 @@ export const NEAR_BUCKET_MILES = 5
  */
 export const NEAR_ME_RADIUS_MILES = 10
 
-/**
- * Band width, in miles, once the listing is already bounded to a radius
- * (2026-09-11).
- *
- * NEAR_BUCKET_MILES (5) is the right width for an unbounded listing, where the
- * job is "lead with the visitor's region". It is the wrong width once the set is
- * already 10 miles wide: in a dense city every clinic on page 1 falls inside the
- * first 5-mile band, so there is effectively ONE band and merit alone decides
- * the order. Measured on staging for 77009 -- the 24 rows came back ordered
- * 4.51, 2.66, 4.45, 4.33, 2.05, 1.59 ... with review counts in perfect descent,
- * and the nearest clinic (1.02 mi) sat 12th. That is the exact complaint the
- * radius was meant to fix, reappearing one scale down.
- *
- * At 1 mile the same set orders 1.02, 1.59, 1.76, 1.77, 2.04, 2.05 ... and merit
- * only separates clinics that are genuinely the same distance away, which is
- * what "near me" has to mean.
- *
- * Used only when a radius filter is active. Without one the width stays
- * NEAR_BUCKET_MILES, so state and city listings are unaffected.
- */
-export const NEAR_ME_BUCKET_MILES = 1
-
 // ─── Extended provider shape ─────────────────────────────────────────────────
 // DirectoryProvider has most fields we need. bio and updatedAt are optional
 // additions supplied by mapProvider; they gracefully degrade to 0 if absent.
@@ -262,6 +240,39 @@ export function sortClinicsByMeritWithinBuckets<T extends MeritClinicLike>(
   return [...clinics].sort((a, b) => {
     const bandDiff = band(a) - band(b)
     if (bandDiff !== 0) return bandDiff
+    return clinicMeritScore(b) - clinicMeritScore(a)
+  })
+}
+
+/**
+ * Nearest first, for a listing already bounded to a radius (2026-09-11,
+ * founder call).
+ *
+ * Distance bands are the wrong tool once the set is local. At 5 miles every
+ * Houston clinic on page 1 shared one band and review count alone set the
+ * order (nearest clinic 12th). At 1 mile the order was right by band but the
+ * distance printed on each card read 1.6, 2.0, 1.8, 1.7, 1.5, 1.0 down the
+ * page, which a visitor reads as a broken sort. With the distance on every
+ * card, the list has to read in the order the cards say.
+ *
+ * Merit only separates clinics at exactly the same distance. A clinic with no
+ * distance sorts last, in merit order.
+ *
+ * The SQL orders by the same distance when a radius is set, so page 2 carries
+ * on from page 1 and this only settles the rows already loaded.
+ */
+export function sortClinicsByDistance<T extends MeritClinicLike>(clinics: T[]): T[] {
+  const miles = (c: MeritClinicLike): number =>
+    typeof c.distanceMiles === 'number' && Number.isFinite(c.distanceMiles)
+      ? c.distanceMiles
+      : Number.POSITIVE_INFINITY
+
+  return [...clinics].sort((a, b) => {
+    const da = miles(a)
+    const db = miles(b)
+    // Compared, not subtracted: Infinity - Infinity is NaN, which sort()
+    // treats as "equal" and would skip the merit tiebreak for unlocated rows.
+    if (da !== db) return da < db ? -1 : 1
     return clinicMeritScore(b) - clinicMeritScore(a)
   })
 }

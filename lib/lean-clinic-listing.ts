@@ -22,7 +22,7 @@ import {
   clinicDistanceMetersHaversine,
   isPostGisAvailable,
 } from './search-sql'
-import { NEAR_BUCKET_MILES, NEAR_ME_BUCKET_MILES } from './merit'
+import { NEAR_BUCKET_MILES } from './merit'
 import { BoundedTtlCache } from './bounded-ttl-cache'
 
 /**
@@ -288,23 +288,11 @@ export async function fetchLeanClinics(
       ? clinicDistanceMeters(lat, lng, 'c')
       : clinicDistanceMetersHaversine(lat, lng, 'c')
     const inBox = clinicBoundingBoxSql(lat, lng, NEAR_MAX_MILES, 'c')
-    /**
-     * A radius filter means the set is already local, so the bands have to be
-     * finer or they stop separating anything: inside 10 miles a 5-mile band put
-     * every page-1 clinic in one group and merit alone decided the order (see
-     * NEAR_ME_BUCKET_MILES). Without a radius the listing is unbounded and the
-     * wider band is still correct, which is what leaves state and city pages
-     * untouched.
-     *
-     * The browser re-sorts within these same bands, so it must be told the same
-     * width. Both sides derive it from the same test: radius set or not.
-     */
-    const bucketMiles = opts.radiusMiles != null ? NEAR_ME_BUCKET_MILES : NEAR_BUCKET_MILES
-    const bucketMeters = bucketMiles * METERS_PER_MILE
+    const bucketMeters = NEAR_BUCKET_MILES * METERS_PER_MILE
     // The box is a square around the circle, so its corners reach past
     // NEAR_MAX_MILES. Clamping keeps those corner rows in the last real band
     // instead of inventing bands beyond the cutoff.
-    const maxBucket = Math.floor(NEAR_MAX_MILES / bucketMiles)
+    const maxBucket = Math.floor(NEAR_MAX_MILES / NEAR_BUCKET_MILES)
     geoSelect = `,
              CASE WHEN ${inBox} THEN LEAST(floor(${distExpr} / ${bucketMeters}), ${maxBucket})
                   ELSE ${FAR_BUCKET} END AS geo_rank,
@@ -312,8 +300,26 @@ export async function fetchLeanClinics(
                   ELSE NULL END AS distance_miles`
     // Postgres allows ORDER BY on an output column alias, so the CASE is
     // evaluated once per row rather than twice.
-    geoOrder = 'geo_rank ASC, '
-    geoOrderOuter = 'm.geo_rank ASC, '
+    if (opts.radiusMiles != null) {
+      /**
+       * A radius means the set is already local, so order by the distance
+       * itself, nearest first (2026-09-11, founder call). Bands at any width
+       * failed here: at 5 miles all of page 1 shared one band and review count
+       * set the order; at 1 mile the distance printed on each card read
+       * 1.6, 2.0, 1.8, 1.7, 1.5, 1.0 down the page. The tiebreakers after it
+       * only separate clinics at the same distance.
+       *
+       * The browser settles loaded rows with sortClinicsByDistance, which uses
+       * the same test (radius set or not), so the two never disagree. Without a
+       * radius the bands below still apply, which leaves state and city pages
+       * as they were.
+       */
+      geoOrder = 'distance_miles ASC NULLS LAST, '
+      geoOrderOuter = 'm.distance_miles ASC NULLS LAST, '
+    } else {
+      geoOrder = 'geo_rank ASC, '
+      geoOrderOuter = 'm.geo_rank ASC, '
+    }
   }
 
   const where = conditions.join(' AND ')
