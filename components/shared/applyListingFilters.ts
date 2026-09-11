@@ -227,20 +227,23 @@ export function toServerFilterParams(filters: ListingFilterValues): URLSearchPar
 }
 
 /**
- * Coordinates are rounded to 2 decimal places before they reach the server.
+ * Coordinates are rounded to 4 decimal places (about 11m) before they reach the
+ * server (2026-09-12; was 2).
  *
- * This is what makes the listing response cache useful. Raw coordinates differ
- * slightly between ISP blocks inside one city, and a key that varies per
- * visitor caches nothing. Two decimals is about 1.1km, so a city collapses to a
- * handful of keys instead of thousands.
+ * Two decimals (about 1.1km) was chosen when results were grouped into 5-mile
+ * distance bands, where a 1km shift almost never moved a clinic. That stopped
+ * being true once a radius listing began ordering by the distance itself and
+ * printing it on every card: the shift moved the origin up to 0.35 miles, and
+ * the founder caught cards reading 0.3 mi for a clinic 0.6 mi from the ZIP in
+ * the heading. Four decimals keeps the printed distance honest.
  *
- * The precision loss costs nothing here: results are grouped into 5-mile
- * (8km) distance bands, so a 1.1km shift almost never moves a clinic across a
- * band boundary. Sending a coarser location also means a precise one is not
- * sitting in URLs and server logs.
+ * The cache does not lose much. The near-me default now sends the centre of
+ * the visitor's ZIP, so everyone in one ZIP shares one key. The point is a ZIP
+ * centre or the geo provider's pin for an IP block, never the visitor's own
+ * position, so nothing precise lands in URLs or logs.
  */
 function roundForCache(value: number): string {
-  return String(Number(value.toFixed(2)))
+  return String(Number(value.toFixed(4)))
 }
 
 /** Stable string for effect deps: changes only when a server-handled filter does. */

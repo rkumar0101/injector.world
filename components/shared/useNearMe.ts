@@ -122,6 +122,29 @@ function clearSaved() {
   }
 }
 
+type ZipCentre = { lat: number; lng: number; city: string | null; stateCode: string | null }
+
+/**
+ * The centre of a ZIP from our own zip_codes table, via /api/geo/zip. Null for
+ * an unknown ZIP, a network failure or an abort; callers decide the fallback.
+ */
+async function fetchZipCentre(zip: string, signal?: AbortSignal): Promise<ZipCentre | null> {
+  try {
+    const res = await fetch(`/api/geo/zip?zip=${encodeURIComponent(zip)}`, { signal })
+    if (!res.ok) return null
+    const data = (await res.json()) as any
+    if (!data?.found || !isFiniteNumber(data.lat) || !isFiniteNumber(data.lng)) return null
+    return {
+      lat: data.lat,
+      lng: data.lng,
+      city: typeof data.city === 'string' ? data.city : null,
+      stateCode: typeof data.state === 'string' ? data.state : null,
+    }
+  } catch {
+    return null
+  }
+}
+
 export function useNearMe(): NearMeState {
   const [status, setStatus] = useState<NearMeStatus>('idle')
   const [place, setPlace] = useState<NearMePlace | null>(null)
@@ -143,37 +166,87 @@ export function useNearMe(): NearMeState {
     setStatus('resolving')
 
     const controller = new AbortController()
-    const timer = window.setTimeout(() => {
+    // The IP's own answer, kept in case the ZIP-centre lookup is slow.
+    let ipPlace: NearMePlace | null = null
+    let settled = false
+    // Set on unmount (and on React's dev double-run), so a request aborted by
+    // cleanup cannot write 'none' over the run that replaced it.
+    let cancelled = false
+    let timer = 0
+
+    function settle(next: NearMePlace | null) {
+      if (settled || cancelled || overriddenRef.current) return
+      settled = true
+      window.clearTimeout(timer)
+      if (next) {
+        setPlace(next)
+        setSource('ip')
+        setStatus('ready')
+      } else {
+        setStatus('none')
+      }
+    }
+
+    timer = window.setTimeout(() => {
       controller.abort()
-      if (!overriddenRef.current) setStatus((s) => (s === 'resolving' ? 'none' : s))
+      // Out of time. If the IP answered but the ZIP centre did not, the IP's
+      // point is still the visitor's area, and a local list beats none.
+      settle(ipPlace)
     }, RESOLVE_TIMEOUT_MS)
 
-    fetch('/api/geo/ip', { signal: controller.signal })
-      .then((r) => (r.ok ? r.json() : null))
-      .then((data: any) => {
-        if (overriddenRef.current) return
-        if (isFiniteNumber(data?.lat) && isFiniteNumber(data?.lng) && typeof data?.zip === 'string' && data.zip) {
-          setPlace({
-            zip: String(data.zip).slice(0, 5),
-            city: typeof data.city === 'string' ? data.city : null,
-            stateCode: typeof data.stateCode === 'string' ? data.stateCode : null,
-            lat: data.lat,
-            lng: data.lng,
-          })
-          setSource('ip')
-          setStatus('ready')
+    void (async () => {
+      try {
+        const res = await fetch('/api/geo/ip', { signal: controller.signal })
+        const data: any = res.ok ? await res.json() : null
+        if (!isFiniteNumber(data?.lat) || !isFiniteNumber(data?.lng) || typeof data?.zip !== 'string' || !data.zip) {
+          // Coordinates without a ZIP cannot label the heading, and the heading
+          // is half of what makes this feature readable. Treat as unresolved.
+          settle(null)
           return
         }
-        // Coordinates without a ZIP cannot label the heading, and the heading is
-        // half of what makes this feature readable. Treat it as unresolved.
-        setStatus('none')
-      })
-      .catch(() => {
-        if (!overriddenRef.current) setStatus('none')
-      })
-      .finally(() => window.clearTimeout(timer))
+        const zip = String(data.zip).slice(0, 5)
+        ipPlace = {
+          zip,
+          city: typeof data.city === 'string' ? data.city : null,
+          stateCode: typeof data.stateCode === 'string' ? data.stateCode : null,
+          lat: data.lat,
+          lng: data.lng,
+        }
+
+        /**
+         * Measure from the centre of the ZIP the heading names, not from the
+         * IP's own point (2026-09-12).
+         *
+         * The IP point is wherever the geo provider pins that address block. It
+         * is not the visitor and it is not the ZIP, so distances measured from
+         * it cannot be checked against anything the page shows. Founder checked
+         * them on the map and they were off: a VPN exit in Houston produced
+         * Mosaic Dermatology 0.2 mi and Westlake Dermatology 0.3 mi, which only
+         * reproduce from the point 29.73,-95.41 (the IP point, rounded). From the
+         * 77098 centre Westlake is 0.6 mi.
+         *
+         * The centre is also what the manual "Change" path already uses, so
+         * both ways into the listing now measure from the same kind of point.
+         */
+        const centre = await fetchZipCentre(zip, controller.signal)
+        settle(
+          centre
+            ? {
+                zip,
+                city: centre.city ?? ipPlace.city,
+                stateCode: centre.stateCode ?? ipPlace.stateCode,
+                lat: centre.lat,
+                lng: centre.lng,
+              }
+            : ipPlace,
+        )
+      } catch {
+        settle(ipPlace)
+      }
+    })()
 
     return () => {
+      cancelled = true
       window.clearTimeout(timer)
       controller.abort()
     }
@@ -183,28 +256,22 @@ export function useNearMe(): NearMeState {
     const clean = zip.trim()
     if (!/^\d{5}$/.test(clean)) return false
 
-    try {
-      const res = await fetch(`/api/geo/zip?zip=${encodeURIComponent(clean)}`)
-      if (!res.ok) return false
-      const data = (await res.json()) as any
-      if (!data?.found || !isFiniteNumber(data.lat) || !isFiniteNumber(data.lng)) return false
+    const centre = await fetchZipCentre(clean)
+    if (!centre) return false
 
-      const next: NearMePlace = {
-        zip: String(data.zip ?? clean),
-        city: typeof data.city === 'string' ? data.city : null,
-        stateCode: typeof data.state === 'string' ? data.state : null,
-        lat: data.lat,
-        lng: data.lng,
-      }
-      overriddenRef.current = true
-      writeSaved(next)
-      setPlace(next)
-      setSource('saved')
-      setStatus('ready')
-      return true
-    } catch {
-      return false
+    const next: NearMePlace = {
+      zip: clean,
+      city: centre.city,
+      stateCode: centre.stateCode,
+      lat: centre.lat,
+      lng: centre.lng,
     }
+    overriddenRef.current = true
+    writeSaved(next)
+    setPlace(next)
+    setSource('saved')
+    setStatus('ready')
+    return true
   }, [])
 
   const clear = useCallback(() => {
