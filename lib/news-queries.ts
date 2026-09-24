@@ -208,10 +208,14 @@ export async function getAllNewsSlugs(): Promise<string[]> {
 
 export async function getLatestNewsForRss(limit = 20): Promise<NewsRssItem[]> {
   const payload = await getPayloadInstance()
+  // Approved only (2026-09-25). The old `indexState = 'indexed'` condition came
+  // from the pre-2026-08-08 auto-indexing model; no news row carries it any
+  // more, so the feed shipped zero items. Search indexing is decided in
+  // page_index now and has nothing to do with who may subscribe to the feed.
   const res = await payload.find({
     collection: 'news',
     where: {
-      and: [...APPROVED, { indexState: { equals: 'indexed' } }],
+      and: [...APPROVED],
     },
     limit,
     sort: ['-publishedAt', '-createdAt'],

@@ -3,6 +3,7 @@ import { staticPageMetadata } from '@/lib/seo-metadata'
 import Link from 'next/link'
 import { Header } from '@/components/header/Header'
 import { Footer } from '@/components/footer/Footer'
+import { ProtectedEmail } from '@/components/shared/ProtectedEmail'
 
 export function generateMetadata(): Promise<Metadata> {
   return staticPageMetadata(
@@ -87,7 +88,7 @@ export default function ListYourClinicPage() {
                 <ol className="space-y-5">
                   {[
                     { n: '1', text: 'Search the directory for your clinic. Most are already listed from public records.' },
-                    { n: '2', text: 'Claim the profile with your license number and clinic details, or email clinics@injector.world.' },
+                    { n: '2', text: <>Claim the profile with your license number and clinic details, or email <ProtectedEmail user="clinics" />.</> },
                     { n: '3', text: 'We verify your license against the state medical board. This typically takes 2 to 3 business days.' },
                     { n: '4', text: 'We email you a secure link to set up your account, then you can edit your profile and receive bookings.' },
                   ].map((step) => (
@@ -106,12 +107,10 @@ export default function ListYourClinicPage() {
                 <p className="text-body-sm text-ink-secondary mb-5">
                   Send us your license number and we will start the verification process.
                 </p>
-                <a
-                  href="mailto:clinics@injector.world"
+                <ProtectedEmail
+                  user="clinics"
                   className="flex w-full items-center justify-center gap-2 bg-brand-primary text-surface-canvas rounded-control py-3 text-body-sm font-semibold hover:opacity-90 transition"
-                >
-                  clinics@injector.world
-                </a>
+                />
               </div>
 
               <div className="rounded-xl border border-border-subtle bg-surface p-4 text-caption text-ink-tertiary leading-relaxed space-y-2">

@@ -66,7 +66,7 @@ export function SaveAuthPrompt({ open, onClose }: { open: boolean; onClose: () =
         </span>
 
         <h2 id="save-auth-title" className="font-serif text-h3 text-ink-primary">
-          Save your favourite clinics
+          Save your favorite clinics
         </h2>
         <p className="mt-2 text-body-sm text-ink-secondary">
           Sign in to keep your saved clinics on every device.

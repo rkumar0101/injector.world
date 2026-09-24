@@ -13,11 +13,16 @@ export default async function robots(): Promise<MetadataRoute.Robots> {
   // robots meta tag (set in app/(frontend)/layout.tsx metadata) -- Google can then index a bare URL with no
   // content if it's discovered elsewhere. Crawl-allowed + meta-noindex is
   // the reliable way to keep pages out of search while pre-launch.
+  //
+  // `/_next/` is NOT disallowed (removed 2026-09-25). It holds the CSS, the JS
+  // and every /_next/image photo; blocking it meant Googlebot rendered pages
+  // unstyled and could not see a single clinic photo.
+  // docs/FIX-ALL-PLAN-2026-09-24.md 1.1.
   const rules: MetadataRoute.Robots['rules'] = [
     {
       userAgent: '*',
       allow: ['/api/search/suggest'],
-      disallow: ['/admin/', '/api/', '/_next/', '/search?*'],
+      disallow: ['/admin/', '/api/', '/search?*'],
     },
     { userAgent: 'GPTBot', allow: '/', disallow: ['/admin/', '/api/'] },
     { userAgent: 'ClaudeBot', allow: '/', disallow: ['/admin/', '/api/'] },

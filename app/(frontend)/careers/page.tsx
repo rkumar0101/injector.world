@@ -3,6 +3,7 @@ import { staticPageMetadata } from '@/lib/seo-metadata'
 import Link from 'next/link'
 import { Header } from '@/components/header/Header'
 import { Footer } from '@/components/footer/Footer'
+import { ProtectedEmail } from '@/components/shared/ProtectedEmail'
 
 export function generateMetadata(): Promise<Metadata> {
   return staticPageMetadata(
@@ -57,9 +58,7 @@ export default function CareersPage() {
             <h2>How to reach us</h2>
             <p>
               Email:{' '}
-              <a href="mailto:careers@injector.world" className="text-brand-accent hover:underline">
-                careers@injector.world
-              </a>
+              <ProtectedEmail user="careers" className="text-brand-accent hover:underline" />
             </p>
             <p className="text-body-sm text-ink-secondary mt-2">Include your background, what you would work on, and links to relevant work. No recruiters or agencies, please.</p>
           </div>

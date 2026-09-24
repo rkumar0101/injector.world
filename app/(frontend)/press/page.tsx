@@ -3,6 +3,7 @@ import { staticPageMetadata } from '@/lib/seo-metadata'
 import Link from 'next/link'
 import { Header } from '@/components/header/Header'
 import { Footer } from '@/components/footer/Footer'
+import { ProtectedEmail } from '@/components/shared/ProtectedEmail'
 
 export function generateMetadata(): Promise<Metadata> {
   return staticPageMetadata(
@@ -41,9 +42,7 @@ export default function PressPage() {
             <p>We welcome coverage requests, interview inquiries, and data licensing for editorial use. Please reach out to our communications team directly.</p>
             <p>
               Email:{' '}
-              <a href="mailto:press@injector.world" className="text-brand-accent hover:underline">
-                press@injector.world
-              </a>
+              <ProtectedEmail user="press" className="text-brand-accent hover:underline" />
             </p>
             <p className="text-body-sm text-ink-secondary mt-2">We aim to respond to all press inquiries within one business day.</p>
           </div>
@@ -55,7 +54,7 @@ export default function PressPage() {
 
           <div>
             <h2>Media kit</h2>
-            <p>A full media kit including company overview, statistics, and logo files is available on request. Email <a href="mailto:press@injector.world" className="text-brand-accent hover:underline">press@injector.world</a> with "media kit" in the subject line.</p>
+            <p>A full media kit including company overview, statistics, and logo files is available on request. Email <ProtectedEmail user="press" className="text-brand-accent hover:underline" /> with "media kit" in the subject line.</p>
           </div>
 
           <div className="flex flex-wrap gap-4 pt-6 border-t border-border">

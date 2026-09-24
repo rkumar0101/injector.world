@@ -3,6 +3,7 @@ import { staticPageMetadata } from '@/lib/seo-metadata'
 import Link from 'next/link'
 import { Header } from '@/components/header/Header'
 import { Footer } from '@/components/footer/Footer'
+import { ProtectedEmail } from '@/components/shared/ProtectedEmail'
 
 export function generateMetadata(): Promise<Metadata> {
   return staticPageMetadata(
@@ -36,11 +37,11 @@ export default function HipaaPage() {
           </div>
           <div>
             <h2>Your rights</h2>
-            <p>You have the right to access, correct, and request deletion of health information we hold about you. To exercise these rights, contact <a href="mailto:legal@injector.world">legal@injector.world</a>.</p>
+            <p>You have the right to access, correct, and request deletion of health information we hold about you. To exercise these rights, contact <ProtectedEmail user="legal" />.</p>
           </div>
           <div>
             <h2>Contact</h2>
-            <p>For HIPAA-related inquiries: <a href="mailto:legal@injector.world">legal@injector.world</a></p>
+            <p>For HIPAA-related inquiries: <ProtectedEmail user="legal" /></p>
           </div>
           <div className="flex gap-4 pt-4 border-t border-border">
             <Link href="/privacy" className="text-body-sm text-brand-accent hover:underline">Privacy policy</Link>

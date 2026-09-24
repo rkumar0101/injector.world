@@ -3,6 +3,7 @@ import { staticPageMetadata } from '@/lib/seo-metadata'
 import Link from 'next/link'
 import { Header } from '@/components/header/Header'
 import { Footer } from '@/components/footer/Footer'
+import { ProtectedEmail } from '@/components/shared/ProtectedEmail'
 
 // The old title already ended in the brand, so the layout template printed it
 // twice ("Pricing, dash, injector.world | injector.world"). Now the same shape
@@ -15,7 +16,29 @@ export function generateMetadata(): Promise<Metadata> {
   )
 }
 
-const TIERS = [
+type TierLink = { ctaHref: string; ctaMail?: { user: string; subject: string }; cta: string }
+
+/**
+ * A tier's button. Paid tiers open an email, which must not appear as an
+ * address in the served HTML (DigitalOcean's Cloudflare rewrites it and React
+ * throws #418), so those go through ProtectedEmail. 2026-09-25.
+ */
+function TierCta({ tier, className }: { tier: TierLink; className: string }) {
+  if (tier.ctaMail) {
+    return (
+      <ProtectedEmail user={tier.ctaMail.user} subject={tier.ctaMail.subject} className={className}>
+        {tier.cta}
+      </ProtectedEmail>
+    )
+  }
+  return (
+    <a href={tier.ctaHref} className={className}>
+      {tier.cta}
+    </a>
+  )
+}
+
+const TIERS: Array<TierLink & Record<string, any>> = [
   {
     id: 'free',
     label: 'Free',
@@ -34,7 +57,7 @@ const TIERS = [
     period: '/mo',
     tagline: 'Social presence and more photos.',
     cta: 'Request Starter',
-    ctaHref: 'mailto:hello@injector.world?subject=Upgrade request: Starter plan',
+    ctaHref: '', ctaMail: { user: 'hello', subject: 'Upgrade request: Starter plan' },
     ctaStyle: 'border',
     highlight: false,
   },
@@ -45,7 +68,7 @@ const TIERS = [
     period: '/mo',
     tagline: 'Gallery, analytics, and an ad-free profile.',
     cta: 'Request Pro',
-    ctaHref: 'mailto:hello@injector.world?subject=Upgrade request: Pro plan',
+    ctaHref: '', ctaMail: { user: 'hello', subject: 'Upgrade request: Pro plan' },
     ctaStyle: 'solid',
     highlight: true,
   },
@@ -56,7 +79,7 @@ const TIERS = [
     period: '/mo',
     tagline: 'Full analytics and multi-location management.',
     cta: 'Request Elite',
-    ctaHref: 'mailto:hello@injector.world?subject=Upgrade request: Elite plan',
+    ctaHref: '', ctaMail: { user: 'hello', subject: 'Upgrade request: Elite plan' },
     ctaStyle: 'border',
     highlight: false,
   },
@@ -156,16 +179,14 @@ export default function PricingPage() {
                   </div>
                   <p className="text-h4 font-semibold text-ink-primary mb-1">{tier.label}</p>
                   <p className="text-body-sm text-ink-secondary mb-5">{tier.tagline}</p>
-                  <a
-                    href={tier.ctaHref}
+                  <TierCta
+                    tier={tier}
                     className={`block w-full text-center rounded-control py-3 text-body-sm font-semibold transition ${
                       tier.ctaStyle === 'solid'
                         ? 'bg-brand-primary text-surface-canvas hover:opacity-90'
                         : 'border border-brand-primary text-brand-primary hover:bg-brand-primary hover:text-surface-canvas'
                     }`}
-                  >
-                    {tier.cta}
-                  </a>
+                  />
                   {/* Feature list on mobile */}
                   <ul className="mt-5 space-y-2.5">
                     {FEATURES.map((f) => {
@@ -206,16 +227,14 @@ export default function PricingPage() {
                             <span className="font-serif text-[1.75rem] leading-none font-medium text-ink-primary">{tier.price}</span>
                             {tier.period && <span className="text-body-sm text-ink-tertiary mb-0.5">{tier.period}</span>}
                           </div>
-                          <a
-                            href={tier.ctaHref}
+                          <TierCta
+                            tier={tier}
                             className={`block w-full text-center rounded-control py-2.5 text-body-sm font-semibold transition ${
                               tier.ctaStyle === 'solid'
                                 ? 'bg-brand-primary text-surface-canvas hover:opacity-90'
                                 : 'border border-brand-primary text-brand-primary hover:bg-brand-primary hover:text-surface-canvas'
                             }`}
-                          >
-                            {tier.cta}
-                          </a>
+                          />
                         </div>
                       </th>
                     ))}
@@ -243,9 +262,7 @@ export default function PricingPage() {
 
             <p className="text-caption text-ink-tertiary text-center mt-8">
               Paid plans are billed monthly. To upgrade, email{' '}
-              <a href="mailto:hello@injector.world" className="text-brand-accent hover:underline">
-                hello@injector.world
-              </a>{' '}
+              <ProtectedEmail user="hello" className="text-brand-accent hover:underline" />{' '}
               with your plan request. Stripe self-serve billing coming soon.
             </p>
 

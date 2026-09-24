@@ -192,6 +192,9 @@ const securityHeaders = [
 /** @type {import('next').NextConfig} */
 const nextConfig = {
   reactStrictMode: true,
+  // No `x-powered-by: Next.js` on every response (2026-09-25): it only tells a
+  // scanner which framework to try. docs/FIX-ALL-PLAN-2026-09-24.md 1.7.
+  poweredByHeader: false,
   images: {
     remotePatterns: [
       { protocol: 'https', hostname: 'picsum.photos' },
@@ -226,6 +229,12 @@ const nextConfig = {
         headers: securityHeaders,
       },
     ]
+  },
+  // /favicon.ico was a 404 on every host (2026-09-25). Browsers and crawlers
+  // still ask for it by that name regardless of the <link rel="icon">, so it
+  // serves the same app/icon.png. Browsers read PNG bytes under an .ico name.
+  async rewrites() {
+    return [{ source: '/favicon.ico', destination: '/icon.png' }]
   },
 }
 

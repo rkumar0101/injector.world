@@ -3,6 +3,7 @@ import { staticPageMetadata } from '@/lib/seo-metadata'
 import Link from 'next/link'
 import { Header } from '@/components/header/Header'
 import { Footer } from '@/components/footer/Footer'
+import { ProtectedEmail } from '@/components/shared/ProtectedEmail'
 
 export function generateMetadata(): Promise<Metadata> {
   return staticPageMetadata(
@@ -13,11 +14,11 @@ export function generateMetadata(): Promise<Metadata> {
 }
 
 const contacts = [
-  { label: 'Editorial', desc: 'Corrections, article feedback, or editorial inquiries.', email: 'editorial@injector.world' },
-  { label: 'Clinic listings', desc: 'Adding a new clinic, updating your profile, or claiming an existing listing.', email: 'clinics@injector.world' },
-  { label: 'Patient support', desc: 'Questions about the directory, reviews, or your account.', email: 'hello@injector.world' },
-  { label: 'Press', desc: 'Media inquiries and interview requests.', email: 'press@injector.world' },
-  { label: 'Legal', desc: 'Privacy requests, HIPAA inquiries, or legal notices.', email: 'legal@injector.world' },
+  { label: 'Editorial', desc: 'Corrections, article feedback, or editorial inquiries.', email: 'editorial' },
+  { label: 'Clinic listings', desc: 'Adding a new clinic, updating your profile, or claiming an existing listing.', email: 'clinics' },
+  { label: 'Patient support', desc: 'Questions about the directory, reviews, or your account.', email: 'hello' },
+  { label: 'Press', desc: 'Media inquiries and interview requests.', email: 'press' },
+  { label: 'Legal', desc: 'Privacy requests, HIPAA inquiries, or legal notices.', email: 'legal' },
 ]
 
 export default function ContactPage() {
@@ -45,9 +46,9 @@ export default function ContactPage() {
                   <div className="font-semibold text-body text-ink-primary mb-1">{c.label}</div>
                   <div className="text-body-sm text-ink-secondary">{c.desc}</div>
                 </div>
-                <a href={`mailto:${c.email}`} className="flex-shrink-0 text-body-sm text-brand-accent font-medium hover:underline mt-0.5">
-                  {c.email}
-                </a>
+                {/* Mailbox name only: see ProtectedEmail for why no full address
+                    may appear in the served HTML. */}
+                <ProtectedEmail user={c.email} className="flex-shrink-0 text-body-sm text-brand-accent font-medium hover:underline mt-0.5" />
               </div>
             ))}
           </div>

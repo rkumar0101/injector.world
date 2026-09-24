@@ -6,6 +6,7 @@ import { Footer } from '@/components/footer/Footer'
 import { CountPill } from '@/components/shared/CountPill'
 import { getFaqHub, getFaqSettings } from '@/lib/faqs/queries'
 import { getPageRobots } from '@/lib/page-index/queries'
+import { buildPageMetadata } from '@/lib/seo-metadata'
 
 /**
  * /faq: every FAQ category that has at least one approved question, grouped by
@@ -21,13 +22,9 @@ export async function generateMetadata(): Promise<Metadata> {
   if (!settings.hubEnabled) return {}
   const title = `${settings.hubTitle} | injector.world`
   const description = settings.hubMetaDescription || settings.hubIntro
-  return {
-    title: { absolute: title },
-    description,
-    alternates: { canonical: `${siteUrl}/faq` },
-    openGraph: { title, description, url: `${siteUrl}/faq` },
-    ...(await getPageRobots('/faq')),
-  }
+  // buildPageMetadata (2026-09-25): og:image, og:type and og:site_name were
+  // missing. Title, description, canonical and robots are unchanged.
+  return buildPageMetadata({ title, description, url: `${siteUrl}/faq`, imageAlt: title, robots: await getPageRobots('/faq') })
 }
 
 export default async function FaqHubPage() {

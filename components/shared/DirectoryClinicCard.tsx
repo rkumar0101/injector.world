@@ -152,11 +152,17 @@ export function DirectoryClinicCard({
         <div>
           {/* Stretched link: the ::after covers the whole card, so tapping
               anywhere on it opens the clinic. The save button sits on z-10 to
-              stay its own target. */}
-          <h3 className="font-semibold text-body text-ink-primary leading-tight line-clamp-1">
+              stay its own target.
+              Two lines, not one (2026-09-25, QA T3-01): at tablet a card is
+              ~174px wide and one line cut up to 24 of 24 names, so branches of
+              one chain read identically. min-h keeps every card's name block
+              two lines tall so the rows stay aligned; title carries the full
+              name for anything still longer. */}
+          <h3 className="font-semibold text-body text-ink-primary leading-tight line-clamp-2 min-h-[2.5rem]">
             <Link
               href={`/clinics/${c.stateSlug}/${c.citySlug}/${c.slug}`}
               onClick={() => rememberListing(pathname)}
+              title={c.clinicName}
               className="after:absolute after:inset-0 after:content-['']"
             >
               {c.clinicName}

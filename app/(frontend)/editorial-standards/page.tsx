@@ -3,6 +3,7 @@ import { staticPageMetadata } from '@/lib/seo-metadata'
 import Link from 'next/link'
 import { Header } from '@/components/header/Header'
 import { Footer } from '@/components/footer/Footer'
+import { ProtectedEmail } from '@/components/shared/ProtectedEmail'
 
 export function generateMetadata(): Promise<Metadata> {
   return staticPageMetadata(
@@ -83,7 +84,7 @@ export default function EditorialStandardsPage() {
 
           <div>
             <h2>Contact editorial</h2>
-            <p>To report a factual error, suggest a correction, or raise an editorial concern: <a href="mailto:editorial@injector.world">editorial@injector.world</a></p>
+            <p>To report a factual error, suggest a correction, or raise an editorial concern: <ProtectedEmail user="editorial" /></p>
           </div>
 
           <div className="flex flex-wrap gap-4 pt-4 border-t border-border">

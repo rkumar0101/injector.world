@@ -9,7 +9,6 @@ import {
 } from '@/lib/brand-queries'
 import { getActiveBanner } from '@/lib/promotions'
 import { getPageRobots } from '@/lib/page-index/queries'
-import { DEFAULT_OG_IMAGES } from '@/lib/seo-defaults'
 import { buildPageMetadata, withTitleSuffix, countWord, COMPARE_TAIL } from '@/lib/seo-metadata'
 import { CityDirectoryPage } from '@/components/pages/CityDirectoryPage'
 import { ServicePillarPage } from '@/components/pages/ServicePillarPage'
@@ -43,23 +42,15 @@ export async function generateMetadata({
   if (resolved.type === 'services-index') {
     const title = 'All aesthetic services'
     const desc = 'Browse every aesthetic treatment we cover, from neurotoxins to fillers and skin therapies. Find verified, license-checked injectors near you.'
-    return {
-      title: { absolute: `${title} | injector.world` },
-      description: desc,
-      alternates: { canonical: `${siteUrl}/services` },
-      openGraph: { title, description: desc, url: `${siteUrl}/services`, images: DEFAULT_OG_IMAGES },
-    }
+    // buildPageMetadata (2026-09-25): the hand-built openGraph here had no
+    // og:type or og:site_name. Same title, description and canonical as before.
+    return buildPageMetadata({ title: `${title} | injector.world`, description: desc, url: `${siteUrl}/services`, imageAlt: title })
   }
 
   if (resolved.type === 'brands-index') {
     const title = 'Aesthetic product brands'
     const desc = 'Browse aesthetic product brands: Botox, Juvederm, Dysport, Sculptra, and more. Find verified clinics that carry each brand.'
-    return {
-      title: { absolute: `${title} | injector.world` },
-      description: desc,
-      alternates: { canonical: `${siteUrl}/brands` },
-      openGraph: { title, description: desc, url: `${siteUrl}/brands`, images: DEFAULT_OG_IMAGES },
-    }
+    return buildPageMetadata({ title: `${title} | injector.world`, description: desc, url: `${siteUrl}/brands`, imageAlt: title })
   }
 
   if (resolved.type === 'brand-pillar') {

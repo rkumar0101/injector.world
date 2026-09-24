@@ -3,6 +3,7 @@ import { staticPageMetadata } from '@/lib/seo-metadata'
 import Link from 'next/link'
 import { Header } from '@/components/header/Header'
 import { Footer } from '@/components/footer/Footer'
+import { ProtectedEmail } from '@/components/shared/ProtectedEmail'
 
 export function generateMetadata(): Promise<Metadata> {
   return staticPageMetadata(
@@ -44,11 +45,11 @@ export default function PrivacyPage() {
           </div>
           <div>
             <h2>Your rights</h2>
-            <p>You may request a copy of your data, correct inaccurate data, or request deletion of your account by contacting <a href="mailto:legal@injector.world">legal@injector.world</a>. California residents have additional rights under CCPA.</p>
+            <p>You may request a copy of your data, correct inaccurate data, or request deletion of your account by contacting <ProtectedEmail user="legal" />. California residents have additional rights under CCPA.</p>
           </div>
           <div>
             <h2>Contact</h2>
-            <p><a href="mailto:legal@injector.world">legal@injector.world</a></p>
+            <p><ProtectedEmail user="legal" /></p>
           </div>
           <div className="flex gap-4 pt-4 border-t border-border">
             <Link href="/terms" className="text-body-sm text-brand-accent hover:underline">Terms of use</Link>

@@ -184,7 +184,11 @@ export default async function ClinicDetailPage({
                 client rejected. Centring absorbs the extra line symmetrically
                 instead: a two-line name grows a little in both directions rather
                 than pushing the whole column down. */}
-            <div className="grid gap-8 lg:grid-cols-2 lg:items-center">
+            {/* `[&>*]:min-w-0` (2026-09-25, QA T4-01): a grid item defaults to
+                min-width:auto, so below lg the photo gallery's md:flex thumbnail
+                strip stretched this one column to ~912px and the whole page
+                scrolled sideways between 768 and 1023. */}
+            <div className="grid gap-8 lg:grid-cols-2 lg:items-center [&>*]:min-w-0">
               <ClinicCoverPhoto clinicName={clinic.clinicName} photoUrls={clinic.photoUrls} />
 
               {/* Rebuilt 2026-08-10 (client request) as a Google business panel:
