@@ -121,8 +121,12 @@ export default async function SearchPage({
                   <div className="py-12 text-center">
                     <p className="text-body text-ink-primary font-medium mb-2">No matches found</p>
                     <p className="text-body-sm text-ink-secondary max-w-md mx-auto">
-                      Try a broader treatment or a nearby city. Our launch markets are California,
-                      Texas, New York, and Florida; other states are coming soon.
+                      {/* Copy only (2026-09-25, QA T6-01): this used to name four
+                          "launch markets" and call every other state coming soon,
+                          while every state has been live since the September
+                          directory swap. */}
+                      Try a broader treatment, a nearby city, or a ZIP code. We list clinics in
+                      every US state.
                     </p>
                   </div>
                 ) : (

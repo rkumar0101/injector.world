@@ -2,6 +2,7 @@
 
 import { useState } from 'react'
 import { useTurnstile } from '@/components/shared/useTurnstile'
+import { FieldHint } from '@/components/shared/FieldHint'
 
 type Props = {
   source?: 'footer' | 'guide' | 'news' | 'other'
@@ -109,12 +110,15 @@ export function NewsletterSignup({
       )}
       {/* onFocusCapture, so touching ANY field in the form starts loading the
           challenge, whichever one the visitor reaches first. */}
-      <form onSubmit={onSubmit} onFocusCapture={engage} className="flex flex-col gap-2.5">
+      {/* `field`: the email hint below is shown by CSS when the email input
+          inside this form is :user-invalid (QA T8-01, 2026-09-25). */}
+      <form onSubmit={onSubmit} onFocusCapture={engage} className="field flex flex-col gap-2.5">
         {/* Honeypot: hidden from humans, filled by bots — server discards if non-empty */}
         <input name="website" type="text" style={{ display: 'none' }} tabIndex={-1} autoComplete="off" aria-hidden="true" />
         <input
           type="text"
           placeholder="First name (optional)"
+          aria-label="First name (optional)"
           value={name}
           onChange={(e) => setName(e.target.value)}
           maxLength={100}
@@ -144,6 +148,7 @@ export function NewsletterSignup({
             {state === 'loading' ? 'Sending...' : 'Subscribe'}
           </button>
         </div>
+        <FieldHint kind="email" onDark={darkBg} />
         {siteKey && engaged && <div ref={turnstileRef} />}
         {state === 'error' && (
           <p className="text-caption text-state-error">{errorMsg}</p>

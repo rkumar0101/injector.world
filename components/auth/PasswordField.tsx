@@ -1,6 +1,7 @@
 'use client'
 
 import { useState } from 'react'
+import { FieldHint } from '@/components/shared/FieldHint'
 
 /**
  * Password input with a show/hide toggle. Shared by login, signup, and reset.
@@ -27,7 +28,7 @@ export function PasswordField({
   const [show, setShow] = useState(false)
 
   return (
-    <div>
+    <div className="field">
       <div className="flex items-center justify-between mb-1.5">
         <label htmlFor={id} className="block text-body-sm font-medium text-ink-primary">
           {label}
@@ -66,6 +67,9 @@ export function PasswordField({
           )}
         </button>
       </div>
+      <FieldHint kind="password">
+        {minLength ? `Please enter a password of at least ${minLength} characters.` : undefined}
+      </FieldHint>
     </div>
   )
 }

@@ -275,30 +275,20 @@ export const getCityDirectory = cache(async function getCityDirectory(
 
   const [slugMap, clinicsRes, relatedBrandsRes] = await Promise.all([
     getLocationSlugMap(),
-    payload.find({
-      collection: 'clinics',
-      where: {
-        and: [
-          // `equals`, not `like`. See the note in getCityHub: Payload's `like`
-          // is a substring ILIKE, so a service city page had the same
-          // cross-city bleed (Cleveland showing Cleveland Heights clinics).
-          { city: { equals: cityName } },
-          { state: { equals: stateCode } },
-          { status: { equals: 'published' } },
-          { servicesOffered: { in: [service.id] } },
-        ],
-      },
-      limit: 24,
-      page: 1,
-      depth: 0,
-      sort: '-aggregateRatingCount',
-    }),
+      // fetchLeanClinics, not payload.find (2026-09-25): page 1 now comes from
+      // the SAME query and order as this page's "Load more" API. With
+      // payload.find sorted by -aggregateRatingCount (NULLS FIRST) the two
+      // disagreed, and Load more asked the API for its page 2, so the API's
+      // page 1 (the most-reviewed clinics) was never shown on this page:
+      // 24 of 24 on /brands/botox/texas and /services/lip-filler/texas.
+      // Counts shown on the page still come from their own exact queries.
+    fetchLeanClinics(pool, { relFilter: { path: 'servicesOffered', id: Number(service.id) }, stateCode, cityLike: cityName, limit: 24, offset: 0 }),
     payload.find({ collection: 'brands', limit: 100, depth: 0, sort: 'name' }),
   ])
 
-  const clinics: DirectoryClinic[] = (clinicsRes.docs as any[]).map((c: any) => mapClinic(c, slugMap))
+  const clinics: DirectoryClinic[] = clinicsRes.rows.map((row) => mapClinic(leanRowToMapClinicInput(row), slugMap))
 
-  let totalClinics = clinicsRes.totalDocs ?? clinicsRes.docs.length
+  let totalClinics = clinicsRes.totalCount
   try {
     const r = await pool.query(
       `SELECT count(*)::int AS n FROM clinics c
@@ -527,20 +517,14 @@ export const getServiceState = cache(async function getServiceState(
     ),
     getFaqsForPlace({ locationId: stateLoc.id, serviceId: service.id }),
     payload.find({ collection: 'brands', limit: 100, depth: 0, sort: 'name' }),
-    payload.find({
-      collection: 'clinics',
-      where: {
-        and: [
-          { state: { equals: stateCode } },
-          { status: { equals: 'published' } },
-          { servicesOffered: { in: [service.id] } },
-        ],
-      },
-      limit: 24,
-      page: 1,
-      depth: 0,
-      sort: '-aggregateRatingCount',
-    }),
+      // fetchLeanClinics, not payload.find (2026-09-25): page 1 now comes from
+      // the SAME query and order as this page's "Load more" API. With
+      // payload.find sorted by -aggregateRatingCount (NULLS FIRST) the two
+      // disagreed, and Load more asked the API for its page 2, so the API's
+      // page 1 (the most-reviewed clinics) was never shown on this page:
+      // 24 of 24 on /brands/botox/texas and /services/lip-filler/texas.
+      // Counts shown on the page still come from their own exact queries.
+    fetchLeanClinics(pool, { relFilter: { path: 'servicesOffered', id: Number(service.id) }, stateCode, limit: 24, offset: 0 }),
   ])
 
   const cities: StateCityEntry[] = (citiesRes.rows as any[])
@@ -551,7 +535,7 @@ export const getServiceState = cache(async function getServiceState(
     })
     .filter((city): city is StateCityEntry => !!city)
 
-  let totalClinics = clinicsRes.totalDocs ?? clinicsRes.docs.length
+  let totalClinics = clinicsRes.totalCount
   try {
     const r = await pool.query(
       `SELECT count(*)::int AS n FROM clinics c
@@ -566,7 +550,7 @@ export const getServiceState = cache(async function getServiceState(
     service: mapService(service),
     state: mapLocation(stateLoc, stateCode),
     cities,
-    clinics: (clinicsRes.docs as any[]).map((c: any) => mapClinic(c, slugMap)),
+    clinics: clinicsRes.rows.map((row) => mapClinic(leanRowToMapClinicInput(row), slugMap)),
     faqs: faqBlock.faqs,
     faqSeeAll: faqBlock.seeAll,
     totalClinics,

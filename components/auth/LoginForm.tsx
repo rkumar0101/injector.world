@@ -3,6 +3,7 @@
 import { useState, useRef, useEffect } from 'react'
 import Link from 'next/link'
 import { PasswordField } from './PasswordField'
+import { FieldHint } from '@/components/shared/FieldHint'
 
 export function LoginForm({ redirect }: { redirect?: string }) {
   const [email, setEmail] = useState('')
@@ -74,6 +75,7 @@ export function LoginForm({ redirect }: { redirect?: string }) {
           placeholder="you@email.com"
           className="w-full px-4 py-3 rounded-md border border-border bg-surface-canvas text-ink-primary placeholder-ink-tertiary focus:outline-none focus:ring-2 focus:ring-brand-accent text-body-sm"
         />
+        <FieldHint kind="email" />
       </div>
 
       <PasswordField

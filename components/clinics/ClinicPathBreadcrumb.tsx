@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from 'react'
 import Link from 'next/link'
-import { FROM_LISTING_KEY } from '@/lib/from-listing'
+import { readListingFor } from '@/lib/from-listing'
 
 type Props = {
   stateSlug: string
@@ -58,7 +58,8 @@ export function ClinicPathBreadcrumb({
 
   useEffect(() => {
     try {
-      const stored = sessionStorage.getItem(FROM_LISTING_KEY)
+      // Only when this clinic is the one clicked from that listing (T4-02).
+      const stored = readListingFor(window.location.pathname)
       if (stored && FROM_PATTERN.test(stored)) setFrom(stored)
     } catch {
       // Private mode and blocked site data both throw. The breadcrumb falls

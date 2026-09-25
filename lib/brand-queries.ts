@@ -278,26 +278,20 @@ export const getBrandState = cache(async function getBrandState(
       [brand.id, stateCode.toUpperCase()],
     ),
     getFaqsForPlace({ locationId: stateLoc.id, brandId: brand.id }),
-    payload.find({
-      collection: 'clinics',
-      where: {
-        and: [
-          { state: { equals: stateCode } },
-          { status: { equals: 'published' } },
-          { brandsOffered: { in: [brand.id] } },
-        ],
-      },
-      limit: 24,
-      page: 1,
-      depth: 0,
-      sort: '-aggregateRatingCount',
-    }),
+      // fetchLeanClinics, not payload.find (2026-09-25): page 1 now comes from
+      // the SAME query and order as this page's "Load more" API. With
+      // payload.find sorted by -aggregateRatingCount (NULLS FIRST) the two
+      // disagreed, and Load more asked the API for its page 2, so the API's
+      // page 1 (the most-reviewed clinics) was never shown on this page:
+      // 24 of 24 on /brands/botox/texas and /services/lip-filler/texas.
+      // Counts shown on the page still come from their own exact queries.
+    fetchLeanClinics(pool, { relFilter: { path: 'brandsOffered', id: Number(brand.id) }, stateCode, limit: 24, offset: 0 }),
     payload.find({ collection: 'services', limit: 100, depth: 0, sort: 'name' }),
     getLocationSlugMap(),
   ])
 
   // Total clinics in this state with this brand
-  let totalClinics = clinicsRes.totalDocs ?? clinicsRes.docs.length
+  let totalClinics = clinicsRes.totalCount
   try {
     const r = await pool.query(
       `SELECT count(*)::int AS n FROM clinics c
@@ -320,7 +314,7 @@ export const getBrandState = cache(async function getBrandState(
     brand: mapBrand(brand),
     state: mapLocation(stateLoc, stateCode),
     cities,
-    clinics: (clinicsRes.docs as any[]).map((c: any) => mapClinic(c, slugMap)),
+    clinics: clinicsRes.rows.map((row) => mapClinic(leanRowToMapClinicInput(row), slugMap)),
     relatedServices: (relatedServicesRes.docs as any[]).map((s: any) => ({
       id: String(s.id),
       name: s.name,
@@ -358,25 +352,14 @@ export const getBrandCityDirectory = cache(async function getBrandCityDirectory(
 
   const [slugMap, clinicsRes, relatedServicesRes, faqBlock] = await Promise.all([
     getLocationSlugMap(),
-    payload.find({
-      collection: 'clinics',
-      where: {
-        and: [
-          // `equals`, not `like`. See the note in getCityHub
-          // (lib/location-queries.ts): Payload's `like` is a substring ILIKE,
-          // so a brand city page had the same cross-city bleed (Cleveland
-          // showing Cleveland Heights clinics).
-          { city: { equals: cityName } },
-          { state: { equals: stateCode } },
-          { status: { equals: 'published' } },
-          { brandsOffered: { in: [brand.id] } },
-        ],
-      },
-      limit: 24,
-      page: 1,
-      depth: 0,
-      sort: '-aggregateRatingCount',
-    }),
+      // fetchLeanClinics, not payload.find (2026-09-25): page 1 now comes from
+      // the SAME query and order as this page's "Load more" API. With
+      // payload.find sorted by -aggregateRatingCount (NULLS FIRST) the two
+      // disagreed, and Load more asked the API for its page 2, so the API's
+      // page 1 (the most-reviewed clinics) was never shown on this page:
+      // 24 of 24 on /brands/botox/texas and /services/lip-filler/texas.
+      // Counts shown on the page still come from their own exact queries.
+    fetchLeanClinics(pool, { relFilter: { path: 'brandsOffered', id: Number(brand.id) }, stateCode, cityLike: cityName, limit: 24, offset: 0 }),
     payload.find({ collection: 'services', limit: 100, depth: 0, sort: 'name' }),
     getFaqsForPlace({ locationId: cityLoc.id, brandId: brand.id }),
   ])
@@ -384,7 +367,7 @@ export const getBrandCityDirectory = cache(async function getBrandCityDirectory(
   // Exact count for the brand+city+state combo -- the clinicsRes fetch above uses
   // a fuzzy `like` city match for the listing, which can over/under-count vs. an
   // exact join. This overrides the displayed number with an exact count.
-  let totalClinics = clinicsRes.totalDocs ?? clinicsRes.docs.length
+  let totalClinics = clinicsRes.totalCount
   try {
     const r = await pool.query(
       `SELECT count(*)::int AS n FROM clinics c
@@ -395,7 +378,7 @@ export const getBrandCityDirectory = cache(async function getBrandCityDirectory(
     totalClinics = Number(r.rows[0]?.n ?? totalClinics)
   } catch { /* use totalDocs fallback */ }
 
-  const clinics: DirectoryClinic[] = (clinicsRes.docs as any[]).map((c: any) => mapClinic(c, slugMap))
+  const clinics: DirectoryClinic[] = clinicsRes.rows.map((row) => mapClinic(leanRowToMapClinicInput(row), slugMap))
 
   const relatedServices = (relatedServicesRes.docs as any[]).map((s: any) => ({
     id: String(s.id),

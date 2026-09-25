@@ -77,7 +77,7 @@ export function DirectoryClinicCard({
           <h3 className="font-semibold text-body-sm text-ink-primary leading-tight line-clamp-1">
             <Link
               href={`/clinics/${c.stateSlug}/${c.citySlug}/${c.slug}`}
-              onClick={() => rememberListing(pathname)}
+              onClick={() => rememberListing(pathname, `/clinics/${c.stateSlug}/${c.citySlug}/${c.slug}`)}
               className="after:absolute after:inset-0 after:content-['']"
             >
               {c.clinicName}
@@ -161,7 +161,7 @@ export function DirectoryClinicCard({
           <h3 className="font-semibold text-body text-ink-primary leading-tight line-clamp-2 min-h-[2.5rem]">
             <Link
               href={`/clinics/${c.stateSlug}/${c.citySlug}/${c.slug}`}
-              onClick={() => rememberListing(pathname)}
+              onClick={() => rememberListing(pathname, `/clinics/${c.stateSlug}/${c.citySlug}/${c.slug}`)}
               title={c.clinicName}
               className="after:absolute after:inset-0 after:content-['']"
             >

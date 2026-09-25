@@ -228,7 +228,7 @@ function ListingMapContent({
     <InfoWindow position={{ lat: popup.lat, lng: popup.lng }} headerDisabled onClose={() => setPopup(null)}>
       <a
         href={popup.pin.href}
-        onClick={() => rememberListing(pathname)}
+        onClick={() => rememberListing(pathname, popup.pin.href)}
         style={{
           display: 'block',
           minWidth: 180,

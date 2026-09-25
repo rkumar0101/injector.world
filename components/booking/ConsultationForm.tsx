@@ -2,6 +2,7 @@
 
 import { useEffect, useRef, useState, type FormEvent, type ReactNode } from 'react'
 import { track } from '@/lib/analytics/client'
+import { FieldHint } from '@/components/shared/FieldHint'
 
 /**
  * The consultation request form itself: validation, Turnstile, GTM events and
@@ -351,11 +352,11 @@ export function ConsultationForm({
     <form onSubmit={handleSubmit} onFocusCapture={() => setEngaged(true)} noValidate className={className}>
       <input name="website" type="text" tabIndex={-1} style={{ display: 'none' }} autoComplete="off" aria-hidden="true" />
 
-      <Field label="Name" required error={fieldErrors.patientName}>
+      <Field label="Name" required error={fieldErrors.patientName} hint="required">
         <input name="patientName" type="text" autoComplete="name" required className={inputClass(fieldErrors.patientName)} />
       </Field>
 
-      <Field label="Email" required error={fieldErrors.patientEmail}>
+      <Field label="Email" required error={fieldErrors.patientEmail} hint="email">
         <input name="patientEmail" type="email" autoComplete="email" required className={inputClass(fieldErrors.patientEmail)} />
       </Field>
 
@@ -428,12 +429,15 @@ function Field({
   required,
   optional,
   error,
+  hint,
   children,
 }: {
   label: string
   required?: boolean
   optional?: boolean
   error?: string
+  /** Inline hint shown by CSS once the field is :user-invalid (QA T8-01). */
+  hint?: 'required' | 'email'
   children: ReactNode
 }) {
   return (
@@ -444,7 +448,8 @@ function Field({
         {optional && <span className="ml-1 text-caption font-normal text-ink-tertiary">optional</span>}
       </span>
       {children}
-      {error && <span className="mt-1 block text-caption text-state-error">{error}</span>}
+      {/* The server's message wins; otherwise the CSS-driven hint. */}
+      {error ? <span className="mt-1 block text-caption text-state-error">{error}</span> : hint && <FieldHint kind={hint} />}
     </label>
   )
 }

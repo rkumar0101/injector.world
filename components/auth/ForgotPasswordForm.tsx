@@ -1,6 +1,7 @@
 'use client'
 
 import { useState } from 'react'
+import { FieldHint } from '@/components/shared/FieldHint'
 
 export function ForgotPasswordForm() {
   const [email, setEmail] = useState('')
@@ -60,6 +61,7 @@ export function ForgotPasswordForm() {
           placeholder="you@email.com"
           className="w-full px-4 py-3 rounded-md border border-border bg-surface-canvas text-ink-primary placeholder-ink-tertiary focus:outline-none focus:ring-2 focus:ring-brand-accent text-body-sm"
         />
+        <FieldHint kind="email" />
       </div>
 
       {error && (

@@ -4,6 +4,7 @@ import { useState } from 'react'
 import Link from 'next/link'
 import { PasswordField } from './PasswordField'
 import { useTurnstile } from '@/components/shared/useTurnstile'
+import { FieldHint } from '@/components/shared/FieldHint'
 
 export function SignupForm({ redirect }: { redirect?: string }) {
   const [name, setName] = useState('')
@@ -183,6 +184,7 @@ export function SignupForm({ redirect }: { redirect?: string }) {
           placeholder="Your name"
           className="w-full px-4 py-3 rounded-md border border-border bg-surface-canvas text-ink-primary placeholder-ink-tertiary focus:outline-none focus:ring-2 focus:ring-brand-accent text-body-sm"
         />
+        <FieldHint />
       </div>
 
       <div>
@@ -199,6 +201,7 @@ export function SignupForm({ redirect }: { redirect?: string }) {
           placeholder="you@email.com"
           className="w-full px-4 py-3 rounded-md border border-border bg-surface-canvas text-ink-primary placeholder-ink-tertiary focus:outline-none focus:ring-2 focus:ring-brand-accent text-body-sm"
         />
+        <FieldHint kind="email" />
       </div>
 
       <PasswordField
