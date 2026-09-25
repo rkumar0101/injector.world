@@ -37,8 +37,8 @@ export async function HowWeVerify() {
     {
       num: '02',
       title: 'Credential review',
-      body: 'Board certifications, fellowships, and training centers are reviewed by our medical advisory board before any profile goes live.',
-      proof: '16 board-certified MDs on advisory',
+      body: 'Board certifications, fellowships, and training centers are reviewed by our team before any profile goes live.',
+      proof: 'Credentials reviewed',
       icon: icons[1],
     },
     {
@@ -118,9 +118,6 @@ export async function HowWeVerify() {
             <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" className="group-hover:translate-x-0.5 transition">
               <polyline points="9 18 15 12 9 6" />
             </svg>
-          </Link>
-          <Link href="/medical-advisory" className="inline-flex items-center gap-2 px-6 py-3 text-body-sm font-medium text-brand-accent hover:underline">
-            Meet our medical advisory board
           </Link>
         </div>
       </div>

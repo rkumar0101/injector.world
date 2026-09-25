@@ -49,7 +49,7 @@ export default function PressPage() {
 
           <div>
             <h2>Data and research</h2>
-            <p>Our database covers over 12,000 verified injectors across 50 states. Journalists covering the aesthetics market, healthcare, or consumer trends are welcome to request aggregated data for editorial coverage. We can also arrange on-record quotes from our editorial and medical advisory teams.</p>
+            <p>Our database covers over 12,000 verified injectors across 50 states. Journalists covering the aesthetics market, healthcare, or consumer trends are welcome to request aggregated data for editorial coverage. We can also arrange on-record quotes from our editorial team.</p>
           </div>
 
           <div>

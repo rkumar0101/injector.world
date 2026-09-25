@@ -121,18 +121,24 @@ export function ClinicCoverPhoto({
       </div>
 
       {multiple && (
-        <div className="flex items-center justify-center gap-1.5 md:hidden">
+        <div className="flex items-center justify-center md:hidden">
           {photos.map((url, index) => (
+            // The visible dot stays 8px; the button around it is 24px tall so it
+            // can be hit with a thumb (2026-09-25, QA T4-05: was 20x8).
             <button
               key={url}
               type="button"
               onClick={() => setActive(index)}
               aria-label={`Show photo ${index + 1}`}
               aria-current={active === index}
-              className={`h-2 rounded-full transition-all ${
-                active === index ? 'w-5 bg-brand-primary' : 'w-2 bg-border'
-              }`}
-            />
+              className="flex h-6 items-center px-1"
+            >
+              <span
+                className={`block h-2 rounded-full transition-all ${
+                  active === index ? 'w-5 bg-brand-primary' : 'w-2 bg-border'
+                }`}
+              />
+            </button>
           ))}
         </div>
       )}

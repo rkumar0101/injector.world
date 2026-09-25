@@ -65,7 +65,6 @@ export const footerLinks = {
     { label: 'Pricing', href: '/pricing' },
     { label: 'List your clinic', href: '/list-your-clinic' },
     { label: 'Editorial standards', href: '/editorial-standards' },
-    { label: 'Medical advisory', href: '/medical-advisory' },
     { label: 'Press', href: '/press' },
     { label: 'Careers', href: '/careers' },
   ],

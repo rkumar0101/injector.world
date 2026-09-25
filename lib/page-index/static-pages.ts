@@ -48,7 +48,6 @@ export const STATIC_PAGES: StaticPage[] = [
   // ── Trust and company ──────────────────────────────────────────────────────
   { path: '/how-we-verify', changefreq: 'monthly', priority: 0.6, indexable: true },
   { path: '/editorial-standards', changefreq: 'monthly', priority: 0.5, indexable: true },
-  { path: '/medical-advisory', changefreq: 'monthly', priority: 0.6, indexable: true },
   { path: '/about', changefreq: 'monthly', priority: 0.5, indexable: true },
   { path: '/press', changefreq: 'monthly', priority: 0.4, indexable: true },
   { path: '/careers', changefreq: 'monthly', priority: 0.4, indexable: true },

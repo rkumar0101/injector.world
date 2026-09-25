@@ -20,7 +20,6 @@ Aesthetics news: https://injector.world/news
 News RSS feed: https://injector.world/news/rss.xml
 How we verify: https://injector.world/how-we-verify
 Editorial standards: https://injector.world/editorial-standards
-Medical advisory board: https://injector.world/medical-advisory
 
 ## URL structure
 

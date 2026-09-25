@@ -23,7 +23,7 @@ const steps = [
     number: '02',
     title: 'Credential review',
     body: 'We verify the provider\'s claimed credentials. Board certifications, fellowship training, and advanced degrees are confirmed against the relevant certifying bodies (ABMS, ABPS, ABFPRS, etc.).',
-    detail: 'Our medical advisory board reviews profiles for providers claiming board certifications. Credentials shown on a profile are ones we have been able to independently confirm.',
+    detail: 'Our team reviews profiles for providers claiming board certifications. Credentials shown on a profile are ones we have been able to independently confirm.',
   },
   {
     number: '03',
@@ -98,10 +98,6 @@ export default function HowWeVerifyPage() {
           <div className="mt-12 flex flex-wrap gap-4">
             <Link href="/editorial-standards" className="flex items-center gap-1.5 text-body-sm text-brand-accent font-medium hover:underline">
               Our editorial standards
-              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><polyline points="9 18 15 12 9 6" /></svg>
-            </Link>
-            <Link href="/medical-advisory" className="flex items-center gap-1.5 text-body-sm text-brand-accent font-medium hover:underline">
-              Our medical advisory board
               <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><polyline points="9 18 15 12 9 6" /></svg>
             </Link>
           </div>

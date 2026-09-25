@@ -254,6 +254,14 @@
     font-size: 16px;
   }
 }
+/* Breadcrumb links were 16px tall, too small to tap (QA T3-06). The padding
+   grows the hit area to ~32px and the matching negative margin keeps the bar
+   exactly as tall as before. */
+nav[aria-label='Breadcrumb'] a {
+  display: inline-block;
+  padding-block: 0.5rem;
+  margin-block: -0.5rem;
+}
 /* Hint on the always-navy footer: the error red is unreadable on navy. */
 .field-error-on-dark {
   color: #fca5a5;

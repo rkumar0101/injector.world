@@ -100,7 +100,9 @@ export const INDEX_THRESHOLDS: Record<PageType, number> = {
   // Computed pages: clinic-count gated.
   'service-city': 5,
   'brand-city-directory': 5,
-  'city-hub': 3,
+  // 5, not 3 (2026-09-25): founder rule, a listing page with fewer than 5
+  // clinics is never indexed. docs/FIX-ALL-PLAN-2026-09-24.md 5.1.
+  'city-hub': 5,
   'service-state': 10,
   'brand-state': 10,
   'state-hub': 10,

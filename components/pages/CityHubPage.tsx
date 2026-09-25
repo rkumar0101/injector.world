@@ -27,6 +27,14 @@ export function CityHubPage({ data, schema }: Props) {
   const { city, stateLocation, services: treatments, brands, clinics, neighborhoods, faqs, totalClinics, allClinicLinks } = data
   const cityDisplay = city.name.replace(/\s+city$/i, '')
   const pathname = usePathname()
+  const duplicateNames = useMemo(() => {
+    const seen = new Map<string, number>()
+    for (const c of allClinicLinks) {
+      const k = c.name.trim().toLowerCase()
+      seen.set(k, (seen.get(k) ?? 0) + 1)
+    }
+    return new Set([...seen].filter(([, n]) => n > 1).map(([k]) => k))
+  }, [allClinicLinks])
   const [neighborhood, setNeighborhood] = useState('')
   const [listingFilters, setListingFilters] = useState<ListingFilterValues>(DEFAULT_LISTING_FILTERS)
   const [allClinics, setAllClinics] = useState(clinics)
@@ -307,6 +315,12 @@ export function CityHubPage({ data, schema }: Props) {
                       className="text-body-sm text-ink-secondary hover:text-brand-accent transition"
                     >
                       {c.name}
+                      {/* Several branches of one chain share a name; the ZIP from
+                          the slug (locked format name-zip5) tells them apart
+                          (2026-09-25, QA T2-10). */}
+                      {duplicateNames.has(c.name.trim().toLowerCase()) && /-(\d{5})$/.test(c.slug)
+                        ? ` (${c.slug.slice(-5)})`
+                        : ''}
                     </Link>
                   </li>
                 ))}

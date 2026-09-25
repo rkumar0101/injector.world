@@ -123,6 +123,7 @@ export function CardNavClient({
   const leadData = lead ?? navLeadFallback
 
   const [open, setOpen] = useState(false)
+  const navRef = useRef<HTMLElement>(null)
   const [activeSection, setActiveSection] = useState<AccordionSection | null>(null)
   const [navHeight, setNavHeight] = useState(NAV_CLOSED)
   const [avatarOpen, setAvatarOpen] = useState(false)
@@ -148,12 +149,33 @@ export function CardNavClient({
 
   // Lock background scroll while the drawer is open (mobile only). The drawer
   // itself keeps its own overflow-y-auto, so it still scrolls internally.
+  //
+  // <html> as well as <body> (2026-09-25, QA T1-06): iOS Safari keeps scrolling
+  // the page behind a drawer when only the body is locked.
   useEffect(() => {
     if (!open || !isMobile) return
-    const previous = document.body.style.overflow
+    const root = document.documentElement
+    const previousBody = document.body.style.overflow
+    const previousRoot = root.style.overflow
     document.body.style.overflow = 'hidden'
-    return () => { document.body.style.overflow = previous }
+    root.style.overflow = 'hidden'
+    return () => {
+      document.body.style.overflow = previousBody
+      root.style.overflow = previousRoot
+    }
   }, [open, isMobile])
+
+  // Close the menu on a click outside the nav card (2026-09-25, QA T1-05).
+  // Mobile already had the backdrop for this; desktop had no way out except
+  // the toggle or Escape.
+  useEffect(() => {
+    if (!open) return
+    function onOutside(e: MouseEvent) {
+      if (navRef.current && !navRef.current.contains(e.target as Node)) setOpen(false)
+    }
+    document.addEventListener('mousedown', onOutside)
+    return () => document.removeEventListener('mousedown', onOutside)
+  }, [open])
 
   // Close on route change
   useEffect(() => { setOpen(false) }, [pathname])
@@ -223,6 +245,7 @@ export function CardNavClient({
             the hero down the page (2026-08-11 bug, client-reported). */}
         <div className="relative z-10 h-[74px] px-3 md:px-6 pt-2.5">
           <nav
+            ref={navRef}
             className="max-w-[1280px] mx-auto rounded-2xl bg-white/70 dark:bg-[#0B1B34]/80 backdrop-blur-xl border border-white/50 dark:border-white/10 shadow-hover transition-[height] duration-[420ms] ease-out"
             style={{ height: navHeight, overflow: (avatarOpen && !open) ? 'visible' : 'hidden' }}
           >

@@ -1,6 +1,7 @@
 import Image from 'next/image'
 import Link from 'next/link'
 import type { NewsCard } from '@/lib/news-queries'
+import { CoverFallback } from '@/components/shared/CoverFallback'
 
 /**
  * The one news card. Used by the homepage "Latest News" section and by the
@@ -46,11 +47,8 @@ export function NewsListingCard({
           />
         </div>
       ) : (
-        <div className="w-full aspect-[16/9] bg-surface-warm flex items-center justify-center">
-          <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" className="text-ink-tertiary">
-            <path d="M4 22h16a2 2 0 002-2V4a2 2 0 00-2-2H8L2 8v12a2 2 0 002 2z" />
-            <polyline points="14 2 14 8 20 8" />
-          </svg>
+        <div className="relative w-full aspect-[16/9] overflow-hidden">
+          <CoverFallback label="News" />
         </div>
       )}
 
